@@ -476,7 +476,7 @@ void makeAnatrees(const char* input, const char* output) {
 
     // Germaniums only
     for (int j = 0; j < germaniumhits; j++){
-        if ( germanium_det[j] <= 12 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
+        if ( germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
             if ( filled_germtree.count(j) == 0 ){
                 germanium_data.time = germanium_abs_ev_time[j];
                 double energy = germanium_energy[j];
