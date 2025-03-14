@@ -17,7 +17,7 @@
 
 
 namespace constants{
-  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
+  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
