@@ -99,7 +99,9 @@ bool isNoisyStrip(std::vector<double> noisy_strip_vector, double event_strip){
         isNoisy = true;
         break; 
       }
+
     }
+
   }
 
   return isNoisy;
@@ -196,6 +198,9 @@ void ionbeta_experimental(const char* input, const char* output){
   TH1F* h1_implantbeta_candidate_hitpattern_x = new TH1F("implantbeta_candidate_hitpattern_x", "Implant-Decay Canditate X Hit Patterns; Counts; X Strip", constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD, constants::POSITION_THRESHOLD);
   TH1F* h1_implantbeta_candidate_hitpattern_y = new TH1F("implantbeta_candidate_hitpattern_y", "Implant-Decay Canditate Y Hit Patterns; Counts; Y Strip", constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD, constants::POSITION_THRESHOLD);
 
+  // Histograms for gamma correlated events
+  TH1F* h1_implantbetagamma_spectrum = new TH1F("implantbetagamma_spectrum", "Implant-Beta-Gamma Energy Spectrum; Energy (keV); Counts/keV", 2000, 0, 2000);
+
   /*TH1F* germanium_energy_hist = new TH1F("germanium_energy_hist", "Germanium Energy", 1.5e3, 0, 1.5e3);*/
   /*TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", number_of_bins, -constants::HALF_LIFE*2, constants::HALF_LIFE*2);*/
   /*TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);*/
@@ -263,6 +268,7 @@ void ionbeta_experimental(const char* input, const char* output){
   int implantbeta_candidate_counter;
   int matched_implantdecays_counter = 0;
   int matched_backwards_implantdecays_counter = 0;
+  int matched_implantbetagamma_counter = 0;
 
   // Loop over all gated implant events in map and perform a beta match
   for (auto gimp_evt = gated_implants_map.begin(); gimp_evt != gated_implants_map.end(); gimp_evt++){
@@ -436,15 +442,18 @@ void ionbeta_experimental(const char* input, const char* output){
         // Unpack germanium event items within prompt window
         auto [germanium_energy, germanium_spill] = germanium_evt->second; 
 
+        // Fill gamma energy spectrum and increase counter
+        h1_implantbetagamma_spectrum->Fill(germanium_energy); // Fill gamma energy spectrum
+        matched_implantbetagamma_counter++;
+
         //************* DEBUG **************
-        std::cout << germanium_energy << std::endl;
+        /*std::cout << germanium_energy << std::endl;*/
         //************* DEBUG **************
       }
 
-    }
-
-    std::cout << "NEW DECAY" << std::endl;
-  }
+    } // End of germanium event loop
+      
+  } // End of matched decay event loop
     
   // *************************************************************************************
   // ****************************** PRINT OUT STATISTICS *********************************
@@ -454,7 +463,8 @@ void ionbeta_experimental(const char* input, const char* output){
     std::cout << "Finished processing the data" << std::endl;
     std::cout << "Matched: " << matched_implantdecays_counter<< " out of " << gated_implants_map.size() << " gated implant events" << std::endl;
     std::cout << "Matched: " << matched_implantdecays_counter << " out of " << all_implants_map.size() << " implant events" << std::endl;
-    std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl << std::endl;
+    std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl;
+    std::cout << "Matched: " << matched_implantbetagamma_counter << " implant-beta-gamma events" << std::endl << std::endl;
   
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
@@ -469,6 +479,7 @@ void ionbeta_experimental(const char* input, const char* output){
   if (constants::CHECK_BETA_CANDITATES){ h2_implantbeta_candidate_hitpattern->Write(); }
   if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_x->Write(); }
   if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_y->Write(); }
+  h1_implantbetagamma_spectrum->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 
