@@ -15,8 +15,8 @@ sbatch -J s101_trees \
 --cpus-per-task=2 \
 --mem-per-cpu=8G \
 --array=1-$NFILES \
--o /lustre/gamma/gbrunic/G302/analysis/ionbeta/cluster/logs/anatrees_%A_%a.out.log \
--e /lustre/gamma/gbrunic/G302/analysis/ionbeta/cluster/logs/anatrees_%A_%e.err.log \
--- /lustre/gamma/gbrunic/G302/analysis/ionbeta/cluster/anatree_launcher.sh
+-o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/anatrees_%A_%a.out.log \
+-e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/anatrees_%A_%e.err.log \
+-- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/anatree_launcher.sh
 
 unset size

@@ -34,7 +34,7 @@ done < "$LISTFILE"
 index=$(($SLURM_ARRAY_TASK_ID - 1))
 infile_dir="${size[index]}"
 infile_basename=$(basename ${infile_dir})
-outfile_dir="/lustre/gamma/gbrunic/G302/analysis/ionbeta/anatrees/${infile_basename//tree.root/anatree.root}"
+outfile_dir="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/anatrees/${infile_basename//tree.root/anatree.root}"
 
 echo $infile_dir
 echo $outfile_dir
@@ -51,7 +51,7 @@ gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Data.so");
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4MacroCompiler.so"); 
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Base.so"); 
 
-.x /lustre/gamma/gbrunic/G302/analysis/ionbeta/scripts/makeAnatrees.C("$infile_dir", "$outfile_dir")
+.x /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/scripts/makeAnatrees.C("$infile_dir", "$outfile_dir")
 EOF
 
 unset size

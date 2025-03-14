@@ -121,25 +121,25 @@ void makeAnatrees(const char* input, const char* output) {
     //     std::cout << "Broken Y strip: " << y << std::endl;
     // }
 
-    TFile *Nb82 = new TFile("gates/82Nb.root");
+    TFile *Nb82 = new TFile("/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82Nb.root");
     if (!Nb82) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Nb84 = new TFile("gates/84Nb.root");
+    TFile *Nb84 = new TFile("/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Nb.root");
     if (!Nb84) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Mo84 = new TFile("gates/84Mo.root");
+    TFile *Mo84 = new TFile("/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Mo.root");
     if (!Mo84) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Mo85 = new TFile("gates/85Mo.root");
+    TFile *Mo85 = new TFile("/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root");
     if (!Mo85) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
