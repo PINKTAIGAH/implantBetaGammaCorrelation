@@ -21,14 +21,18 @@ namespace constants{
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 100 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
-  const double HALF_LIFE = 50; // Define half life of isotope of interest 
+  /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
+  const int64_t PROMPT_WINDOW_START = 14498; 
+  const int64_t PROMPT_WINDOW_END = 16498; 
+
+  const double HALF_LIFE = 9.8; // Define half life of isotope of interest 
   const double HALF_LIFE_NS = HALF_LIFE * TIME_SCALE; // Convert half life to ns
 
-  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
 
   const int LIFETIME_BINS = 500;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
@@ -67,6 +71,7 @@ std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> all_impl
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_impdecays_map;
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_implants_map;
 std::multimap<int64_t, std::tuple<double, double, int, EventType>> good_decays_map;
+std::multimap<int64_t, std::tuple<double, double, int, EventType>> matched_decays_map;
 std::multimap<int64_t, std::tuple<double, int>> germanium_map;
 
 /*std::map<int64_t, std::tuple<double, double, int, int>> implant_map;*/
@@ -272,18 +277,6 @@ void ionbeta_experimental(const char* input, const char* output){
       if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
       if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_IMPLANT, y) ){ continue; }
 
-      /*if (!constants::BROKEN_AIDA_X_STRIPS_IMPLANT.empty()){*/
-      /*  for (auto & noisy_implant_strip_x : constants::BROKEN_AIDA_X_STRIPS_IMPLANT){*/
-      /*    if ( noisy_implant_strip_x == x ){ continue; };*/
-      /*  }*/
-      /*}*/
-      /**/
-      /*if (!constants::BROKEN_AIDA_Y_STRIPS_IMPLANT.empty()){*/
-      /*  for (auto & noisy_implant_strip_y : constants::BROKEN_AIDA_Y_STRIPS_IMPLANT){*/
-      /*    if ( noisy_implant_strip_y == y ){ continue; };*/
-      /*  }*/
-      /*}*/
-
       int implantbeta_candidate_counter = 0; // Reset counter to check all beta candidates
       
       // Reset flags for positive match in new loop
@@ -322,24 +315,6 @@ void ionbeta_experimental(const char* input, const char* output){
         // Check for noisy decay branch strips and skip
         if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
         if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_DECAY, decay_y) ){ continue; }
-        
-        /*if (!constants::BROKEN_AIDA_X_STRIPS_DECAY.empty()){*/
-        /*  for (auto & noisy_decay_strip_x : constants::BROKEN_AIDA_X_STRIPS_DECAY){*/
-        /**/
-            //************* DEBUG **************
-        /*    std::cout << noisy_decay_strip_x << " " << decay_x << std::endl;*/
-            //************* DEBUG **************
-        /*    if ( noisy_decay_strip_x == decay_x ){ */
-        /*      continue; */
-        /*    };*/
-        /*  }*/
-        /*}*/
-        /**/
-        /*if (!constants::BROKEN_AIDA_Y_STRIPS_DECAY.empty()){*/
-        /*  for (auto & noisy_decay_strip_y : constants::BROKEN_AIDA_Y_STRIPS_DECAY){*/
-        /*    if ( noisy_decay_strip_y == decay_y ){ continue; };*/
-        /*  }*/
-        /*}*/
 
         // Check if decay event is onspill and skip if defined by user
         if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1 ){ continue; }
@@ -373,8 +348,11 @@ void ionbeta_experimental(const char* input, const char* output){
               matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
               found_forward_candidate = true; // Change flag for succesfull forward implant decay match
               
+              // Fill map with matched decay events
+              matched_decays_map.emplace(decay_evt->first, std::make_tuple(decay_x, decay_y, decay_spill, DECAY));
+
               //************* DEBUG **************
-              std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;
+              /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
               //************* DEBUG **************
             }
 
@@ -396,7 +374,7 @@ void ionbeta_experimental(const char* input, const char* output){
               found_backwards_candidate = true; // Change flag for succesfull backward implant decay match
               
               //************* DEBUG **************
-              std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;
+              /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
               //************* DEBUG **************
             }
 
@@ -418,6 +396,60 @@ void ionbeta_experimental(const char* input, const char* output){
 
   } // End of gated implant event loop
   
+ 
+  // *************************************************************************************
+  // ************************** MATCHED DECAY - DECAY CORRELATION ************************
+  // *************************************************************************************
+  
+  // Loop over all matched decay events
+  for( auto matched_decay_evt = matched_decays_map.begin(); matched_decay_evt != matched_decays_map.end(); matched_decay_evt++ ){
+    
+    // Unpack matched decay event variables
+    auto [decay_x, decay_y, decay_spill, decay_type] = matched_decay_evt->second;
+    int64_t last_matched_decay_time = matched_decay_evt->first;
+
+    //************* DEBUG **************
+    /*std::cout << matched_decay_evt->first << " " << decay_x << " " << decay_y << std::endl;*/
+    //************* DEBUG **************
+
+    // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
+    auto germanium_start = germanium_map.lower_bound(matched_decay_evt->first - 50e3);
+
+    // *************************************************************************************
+    // **************************  LOOP OVER GERMANIUM EVENTS ******************************
+    // *************************************************************************************
+
+    // Loop over all germanium events between decay event and end of prompt gamma window
+    for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
+
+      int time_diff = germanium_evt->first - last_matched_decay_time; // Find time difference between decay and germanium event
+      
+      //************* DEBUG **************
+      /*std::cout << time_diff << std::endl;*/
+      //************* DEBUG **************
+
+      /*if ( time_diff > constants::PROMPT_WINDOW_END ){ break; }*/
+
+      // Check if germanium event is within prompt window
+      if ( time_diff > constants::PROMPT_WINDOW_START && time_diff < constants::PROMPT_WINDOW_END ){
+          
+        // Unpack germanium event items within prompt window
+        auto [germanium_energy, germanium_spill] = germanium_evt->second; 
+
+        //************* DEBUG **************
+        std::cout << germanium_energy << std::endl;
+        //************* DEBUG **************
+      }
+
+    }
+
+    std::cout << "NEW DECAY" << std::endl;
+  }
+    
+  // *************************************************************************************
+  // ****************************** PRINT OUT STATISTICS *********************************
+  // *************************************************************************************
+   
   // Print results of implant decay correlation algorithm
     std::cout << "Finished processing the data" << std::endl;
     std::cout << "Matched: " << matched_implantdecays_counter<< " out of " << gated_implants_map.size() << " gated implant events" << std::endl;
@@ -454,6 +486,4 @@ void ionbeta_experimental(const char* input, const char* output){
   std::cout << "Finished closing the files" << std::endl;
 
   std::exit(0);
-  
-
 }
