@@ -1,7 +1,7 @@
 # Ignore these repositories
-outputs/
-histos/
-anatrees/
+outputs/*
+histos/*
+anatrees/*
 
 # Ignore all root files
 *.root
