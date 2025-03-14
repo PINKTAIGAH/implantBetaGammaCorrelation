@@ -1,0 +1,7 @@
+# Ignore these repositories
+outputs/
+histos/
+anatrees/
+
+# Ignore all root files
+*.root
