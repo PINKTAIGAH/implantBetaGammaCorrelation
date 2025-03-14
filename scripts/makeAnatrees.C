@@ -54,11 +54,11 @@ void makeAnatrees(const char* input, const char* output) {
     TTreeReaderArray<Int_t> decay_cluster_size_x(reader, "AidaDecayHits.ClusterSizeX");
     TTreeReaderArray<Int_t> decay_cluster_size_y(reader, "AidaDecayHits.ClusterSizeY");
 
-    // TTreeReaderArray<uint64_t> germanium_time(reader, "GermaniumAnlData.fwr_t");
-    // TTreeReaderArray<int64_t> germanium_abs_ev_time(reader, "GermaniumAnlData.fabsolute_event_time");
-    // TTreeReaderArray<uint> germanium_det(reader, "GermaniumAnlData.fdetector_id");
-    // TTreeReaderArray<uint> germanium_cry(reader, "GermaniumAnlData.fcrystal_id");
-    // TTreeReaderArray<Double_t> germanium_energy(reader, "GermaniumAnlData.fchannel_energy");
+    TTreeReaderArray<uint64_t> germanium_time(reader, "GermaniumCalData.fwr_t");
+    TTreeReaderArray<int64_t> germanium_abs_ev_time(reader, "GermaniumCalData.fabsolute_event_time");
+    TTreeReaderArray<uint> germanium_det(reader, "GermaniumCalData.fdetector_id");
+    TTreeReaderArray<uint> germanium_cry(reader, "GermaniumCalData.fcrystal_id");
+    TTreeReaderArray<Double_t> germanium_energy(reader, "GermaniumCalData.fchannel_energy");
 
     TTreeReaderArray<FrsMultiHitItem> FrsMultiItem(reader, "FrsMultiHitData");
     // TTreeReaderArray<Float_t> frs_x4(reader, "FrsHitData.fID_x4");
@@ -121,25 +121,25 @@ void makeAnatrees(const char* input, const char* output) {
     //     std::cout << "Broken Y strip: " << y << std::endl;
     // }
 
-    TFile *Nb82 = new TFile("../gates/82Nb.root");
+    TFile *Nb82 = new TFile("gates/82Nb.root");
     if (!Nb82) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Nb84 = new TFile("../gates/84Nb.root");
+    TFile *Nb84 = new TFile("gates/84Nb.root");
     if (!Nb84) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Mo84 = new TFile("../gates/84Mo.root");
+    TFile *Mo84 = new TFile("gates/84Mo.root");
     if (!Mo84) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
     }
 
-    TFile *Mo85 = new TFile("../gates/85Mo.root");
+    TFile *Mo85 = new TFile("gates/85Mo.root");
     if (!Mo85) {
         std::cerr << "Error: Could not open gate file " << std::endl;
         return;
@@ -262,7 +262,7 @@ void makeAnatrees(const char* input, const char* output) {
 
 
         // sizes
-        // int germaniumhits = germanium_time.GetSize();
+        int germaniumhits = germanium_time.GetSize();
         int aidadecayhits = decay_time.GetSize();
         int aidaimphits = implant_time.GetSize();
         // int frshits = frs_time.GetSize();
@@ -471,6 +471,20 @@ void makeAnatrees(const char* input, const char* output) {
                 }
                 filled_aidadecaytree.insert(i);
             }
+        }
+    }
+
+    // Germaniums only
+    for (int j = 0; j < germaniumhits; j++){
+        if ( germanium_det[j] <= 12 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
+            if ( filled_germtree.count(j) == 0 ){
+                germanium_data.time = germanium_abs_ev_time[j];
+                double energy = germanium_energy[j];
+                germanium_data.energy = energy;
+                germanium_data.sp = spflag;
+                germanium_tree->Fill();
+            }
+        filled_germtree.insert(j);
         }
     }
 
