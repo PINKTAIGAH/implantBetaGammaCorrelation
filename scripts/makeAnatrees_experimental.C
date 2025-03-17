@@ -6,11 +6,11 @@
 #include <TTreeReaderValue.h>
 
 namespace constants{
-  DRAW_HISTS = true;
-  MAKE_ANATREES = true;
+  const bool DRAW_HISTS = true;
+  const bool MAKE_ANATREES = false;
 }
 
-void makeAnatrees(const char* input, const char* output) {
+void makeAnatrees_experimental(const char* input, const char* output) {
     // Open the file
   TFile* file = TFile::Open(input);
   if (!file) {
@@ -239,13 +239,19 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Make histogram for drawing germanium data
 
-  /*TH1F* germanium_energy_hist = new TH1F("germanium_energy_hist", "Germanium Energy", 1.5e3, 0, 1.5e3);*/
-  /*TH2F* aida_implant_xy = new TH2F("aida_implant_xy", "AIDA Implant XY", 384, 0, 384, 128, 0, 128);*/
-  /*TH2F* aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);*/
-  /*TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 4e2, -1e4, 1e5);*/
-  /*TH1F* aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", number_of_slices, 0, duration_in_seconds);*/
-  /*TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);*/
-  /**/
+  TH1F* germanium_energy_hist = new TH1F("germanium_energy_hist", "Germanium Energy", 1.5e3, 0, 1.5e3);
+  TH2F* aida_implant_xy = new TH2F("aida_implant_xy", "AIDA Implant XY", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_implant_energy_xy = new TH2F("aida_implant_energy_xy", "AIDA Implant Energy XY", 500, 0, 7000, 500, 0, 7000);
+  TH2F* aida_implant_gated_nb82_xy = new TH2F("aida_implant_gated_nb82_xy", "AIDA Implant XY (Gated ^{82}Nb)", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_implant_gated_nb84_xy = new TH2F("aida_implant_gated_nb84_xy", "AIDA Implant XY (Gated ^{84}Nb)", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_implant_gated_mo84_xy = new TH2F("aida_implant_gated_mo84_xy", "AIDA Implant XY (Gated ^{84}Mo)", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_implant_gated_mo85_xy = new TH2F("aida_implant_gated_mo85_xy", "AIDA Implant XY (Gated ^{85}Mo)", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
+  TH2F* aida_decay_energy_xy = new TH2F("aida_decay_energy_xy", "AIDA Decay Energy XY", 500, 0, 5000, 500, 0, 5000);
+  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 4e2, -1e4, 1e5);
+  TH1F* aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", number_of_slices, 0, duration_in_seconds);
+  TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);
+
   /*TH2F* frs_z_z2_hist = new TH2F("frs_z_z2_hist", "FRS Z vs Z2", 1000, 58, 68, 1000, 58, 68);*/
   TH2F* frs_z_aoq_hist = new TH2F("frs_z_aoq_hist", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
   /*TH2F* frs_aoq_x4_hist = new TH2F("frs_aoq_x4_hist", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);*/
@@ -266,75 +272,78 @@ void makeAnatrees(const char* input, const char* output) {
       // bool spill_flag = *spill;
 
 
-      // sizes
-      int germaniumhits = germanium_time.GetSize();
-      int aidadecayhits = decay_time.GetSize();
-      int aidaimphits = implant_time.GetSize();
-      // int frshits = frs_time.GetSize();
-      // int bplasthits = bplast_id.GetSize();
+    // sizes
+    int germaniumhits = germanium_time.GetSize();
+    int aidadecayhits = decay_time.GetSize();
+    int aidaimphits = implant_time.GetSize();
+    // int frshits = frs_time.GetSize();
+    // int bplasthits = bplast_id.GetSize();
 
-      int mult_x = decay_x.GetSize();
-      int mult_y = decay_y.GetSize();
+    int mult_x = decay_x.GetSize();
+    int mult_y = decay_y.GetSize();
 
       
-      int spflag = 0;
-      int decflag = 0;
+    int spflag = 0;
+    int decflag = 0;
       // int bpflag = 0;
       // int bp1flag = 0;
       // int bp2flag = 0;
 
-/*       cout << "# of FRS hits:  " << frshits << endl;
-       cout << "# of implant hits:  " << aidaimphits << endl;
-       cout << "# of decay hits:  " << aidadecayhits << endl;
-       cout << "# of gamma hits:  " << germaniumhits << endl;
-       if (bplasthits > 0) cout << "# of bplast hits:  " << bplasthits << endl; */
+/*  cout << "# of FRS hits:  " << frshits << endl;
+    cout << "# of implant hits:  " << aidaimphits << endl;
+    cout << "# of decay hits:  " << aidadecayhits << endl;
+    cout << "# of gamma hits:  " << germaniumhits << endl;
+    if (bplasthits > 0) cout << "# of bplast hits:  " << bplasthits << endl; */
 
-      if(*spill == true) spflag = 1;
-      if(*spill == false) spflag = 2;
+    if(*spill == true) spflag = 1;
+    if(*spill == false) spflag = 2;
       
       
       
-      // for (int j = 0; j < bplasthits; j++) {
-      //     if(bplast_id[j] < 64) bp1flag = 1;
-      //     if(bplast_id[j] > 63 && bplast_id[j] < 128) bp2flag = 1;
-      // }
+    // for (int j = 0; j < bplasthits; j++) {
+    //     if(bplast_id[j] < 64) bp1flag = 1;
+    //     if(bplast_id[j] > 63 && bplast_id[j] < 128) bp2flag = 1;
+    // }
   
-      // if (bp1flag == 1 && bp2flag == 0) bpflag = 1;
-      // if (bp1flag == 0 && bp2flag == 1) bpflag = 2;
-      // if (bp1flag == 1 && bp2flag == 1) bpflag = 3;
+    // if (bp1flag == 1 && bp2flag == 0) bpflag = 1;
+    // if (bp1flag == 0 && bp2flag == 1) bpflag = 2;
+    // if (bp1flag == 1 && bp2flag == 1) bpflag = 3;
           
-//      cout << bp1flag << "  " << bp2flag << "  " << bpflag << endl;
-      // for(int j=0; j<bplasthits; j++){
-      //     bplast_data.time = bplast_time[j];
-      //     bplast_data.id = bplast_id[j];
-      //     bplast_data.slow_tot = bplast_slow_tot[j];
-      //     bplast_data.sp = spflag;
-      //     bplast_data.bp = bpflag;
-      //     bplast_tree->Fill();
-      // }
-      int stopped = 0;
+//  cout << bp1flag << "  " << bp2flag << "  " << bpflag << endl;
+    // for(int j=0; j<bplasthits; j++){
+    //     bplast_data.time = bplast_time[j];
+    //     bplast_data.id = bplast_id[j];
+    //     bplast_data.slow_tot = bplast_slow_tot[j];
+    //     bplast_data.sp = spflag;
+    //     bplast_data.bp = bpflag;
+    //     bplast_tree->Fill();
+    // }
+    int stopped = 0;
 
-      if(aidaimphits > 0){
-          for (int j = 0; j < aidaimphits; j++) {
+    if(aidaimphits > 0){
+      for (int j = 0; j < aidaimphits; j++) {
 
-              if (implant_dssd[j] == 1 && implant_stopped[j] == true){
-                  stopped = 1;
-              } else {
-                  stopped = 2;
-              }
+        if (implant_dssd[j] == 1 && implant_stopped[j] == true){
+          stopped = 1;
+        } 
+        else {
+          stopped = 2;
+        }
               
-              aida_implant_data.time = implant_time[j];
-              aida_implant_data.stopped = stopped;
-              aida_implant_data.dssd = implant_dssd[j];
-              aida_implant_data.x = implant_x[j];
-              aida_implant_data.y = implant_y[j];
-              aida_implant_data.energy = implant_energy[j];
-              aida_implant_data.energy_x = implant_energy_x[j];
-              aida_implant_data.energy_y = implant_energy_y[j];
-              aida_implant_data.sp = spflag;
-              // aida_implant_data.bp = bpflag;
+        aida_implant_data.time = implant_time[j];
+        aida_implant_data.stopped = stopped;
+        aida_implant_data.dssd = implant_dssd[j];
+        aida_implant_data.x = implant_x[j];
+        aida_implant_data.y = implant_y[j];
+        aida_implant_data.energy = implant_energy[j];
+        aida_implant_data.energy_x = implant_energy_x[j];
+        aida_implant_data.energy_y = implant_energy_y[j];
+        aida_implant_data.sp = spflag;
+        // aida_implant_data.bp = bpflag;
 
-              implant_tree->Fill();
+        if (implant_dssd[j]==1) {aida_implant_xy->Fill(implant_x[j], implant_y[j]);}
+        if (implant_dssd[j]==1) {aida_implant_energy_xy->Fill(implant_energy_x[j], implant_energy_y[j]);}
+        implant_tree->Fill();
               // if(implant_x[j] >270 && implant_x[j] < 370 && implant_y[j] > 20 && implant_y[j] < 90){
               //     aida_implant_xy->Fill(implant_x[j], implant_y[j]);
               //     for(int j =0; j<frshits; j++){
@@ -344,114 +353,118 @@ void makeAnatrees(const char* input, const char* output) {
               //         frs_dedeg_z_hist->Fill(frs_z[j],frs_dedeg[j]);
               //     }
               // }
-          }
       }
+    }
 
-      std::set<int> filled_gatedimplanttree_82nb{};
-      std::set<int> filled_gatedimplanttree_84nb{};
-      std::set<int> filled_gatedimplanttree_84mo{};
-      std::set<int> filled_gatedimplanttree_85mo{};
+    std::set<int> filled_gatedimplanttree_82nb{};
+    std::set<int> filled_gatedimplanttree_84nb{};
+    std::set<int> filled_gatedimplanttree_84mo{};
+    std::set<int> filled_gatedimplanttree_85mo{};
 
 // Implants in coincidence with FRS
-      if (aidaimphits >0) {
-          for (auto const& FrsMultiItem : FrsMultiItem) {
-              // std::cout << "Reached the cut!" << std::endl;
-              std::vector<float> const& AoQ = FrsMultiItem.Get_ID_AoQ_corr_s2s4_mhtdc();
-              std::vector<float> const& Z = FrsMultiItem.Get_ID_z41_mhtdc();
-              std::vector<float> const& Z2 = FrsMultiItem.Get_ID_z42_mhtdc();
-              for(int i =0; i<AoQ.size(); i++){
-                  if (i >= AoQ.size() || i >= Z.size()) {
-                      // std::cerr << "Error: Index out of bounds!" << std::endl;
-                      continue; // Skip this iteration if index is out of bounds
-                  }
-                  double aoq = AoQ[i];
-                  double z = Z[i];
-                  double z2 = Z[i];
-                  frs_z_aoq_hist->Fill(aoq, z);
-
-                  if(nb82_zaoq_cut->IsInside(aoq, z) && nb82_zz2_cut->IsInside(z, z2)){
-                      // std::cout << "Passed the cut!" << std::endl;
-                      for (int j = 0; j < aidaimphits; j++) {
-                          if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_82nb.count(j) == 0) {
-                              // std::cout << "Found an implant!" << std::endl;
-                              aida_implant_data.time = implant_time[j];
-                              aida_implant_data.x = implant_x[j];
-                              aida_implant_data.y = implant_y[j];
-                              aida_implant_data.energy = implant_energy[j];
-                              aida_implant_data.energy_x = implant_energy_x[j];
-                              aida_implant_data.energy_y = implant_energy_y[j];
-                              aida_implant_data.sp = spflag;
-                              // aida_implant_data.bp = bpflag;
-                              gatedimplant_82nb_tree->Fill();
-                              implanted_82Nb++;
-                          }
-                          filled_gatedimplanttree_82nb.insert(j);
-                      }
-                  }
-
-                  if(nb84_zaoq_cut->IsInside(aoq, z) && nb84_zz2_cut->IsInside(z, z2)){
-                      // std::cout << "Passed the cut!" << std::endl;
-                      for (int j = 0; j < aidaimphits; j++) {
-                          if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84nb.count(j) == 0) {
-                              // std::cout << "Found an implant!" << std::endl;
-                              aida_implant_data.time = implant_time[j];
-                              aida_implant_data.x = implant_x[j];
-                              aida_implant_data.y = implant_y[j];
-                              aida_implant_data.energy = implant_energy[j];
-                              aida_implant_data.energy_x = implant_energy_x[j];
-                              aida_implant_data.energy_y = implant_energy_y[j];
-                              aida_implant_data.sp = spflag;
-                              // aida_implant_data.bp = bpflag;
-                              gatedimplant_84nb_tree->Fill();
-                              implanted_84Nb++;
-                          }
-                          filled_gatedimplanttree_84nb.insert(j);
-                      }
-                  }
-
-                  if(mo84_zaoq_cut->IsInside(aoq, z) && mo84_zz2_cut->IsInside(z, z2)){
-                      // std::cout << "Passed the cut!" << std::endl;
-                      for (int j = 0; j < aidaimphits; j++) {
-                          if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84mo.count(j) == 0) {
-                              // std::cout << "Found an implant!" << std::endl;
-                              aida_implant_data.time = implant_time[j];
-                              aida_implant_data.x = implant_x[j];
-                              aida_implant_data.y = implant_y[j];
-                              aida_implant_data.energy = implant_energy[j];
-                              aida_implant_data.energy_x = implant_energy_x[j];
-                              aida_implant_data.energy_y = implant_energy_y[j];
-                              aida_implant_data.sp = spflag;
-                              // aida_implant_data.bp = bpflag;
-                              gatedimplant_84mo_tree->Fill();
-                              implanted_84Mo++;
-                          }
-                          filled_gatedimplanttree_84mo.insert(j);
-                      }
-                  }
-
-                  if(mo85_zaoq_cut->IsInside(aoq, z) && mo85_zz2_cut->IsInside(z, z2)){
-                      // std::cout << "Passed the cut!" << std::endl;
-                      for (int j = 0; j < aidaimphits; j++) {
-                          if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_85mo.count(j) == 0) {
-                              // std::cout << "Found an implant!" << std::endl;
-                              aida_implant_data.time = implant_time[j];
-                              aida_implant_data.x = implant_x[j];
-                              aida_implant_data.y = implant_y[j];
-                              aida_implant_data.energy = implant_energy[j];
-                              aida_implant_data.energy_x = implant_energy_x[j];
-                              aida_implant_data.energy_y = implant_energy_y[j];
-                              aida_implant_data.sp = spflag;
-                              // aida_implant_data.bp = bpflag;
-                              gatedimplant_85mo_tree->Fill();
-                              implanted_85Mo++;
-                          }
-                          filled_gatedimplanttree_85mo.insert(j);
-                      }
-                  }
-                
-              }
+    if (aidaimphits >0) {
+      for (auto const& FrsMultiItem : FrsMultiItem) {
+        // std::cout << "Reached the cut!" << std::endl;
+        std::vector<float> const& AoQ = FrsMultiItem.Get_ID_AoQ_corr_s2s4_mhtdc();
+        std::vector<float> const& Z = FrsMultiItem.Get_ID_z41_mhtdc();
+        std::vector<float> const& Z2 = FrsMultiItem.Get_ID_z42_mhtdc();
+        for(int i =0; i<AoQ.size(); i++){
+          if (i >= AoQ.size() || i >= Z.size()) {
+            // std::cerr << "Error: Index out of bounds!" << std::endl;
+            continue; // Skip this iteration if index is out of bounds
           }
+          double aoq = AoQ[i];
+          double z = Z[i];
+          double z2 = Z[i];
+          frs_z_aoq_hist->Fill(aoq, z);
+
+          if(nb82_zaoq_cut->IsInside(aoq, z) && nb82_zz2_cut->IsInside(z, z2)){
+            // std::cout << "Passed the cut!" << std::endl;
+            for (int j = 0; j < aidaimphits; j++) {
+              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_82nb.count(j) == 0) {
+                // std::cout << "Found an implant!" << std::endl;
+                aida_implant_data.time = implant_time[j];
+                aida_implant_data.x = implant_x[j];
+                aida_implant_data.y = implant_y[j];
+                aida_implant_data.energy = implant_energy[j];
+                aida_implant_data.energy_x = implant_energy_x[j];
+                aida_implant_data.energy_y = implant_energy_y[j];
+                aida_implant_data.sp = spflag;
+                // aida_implant_data.bp = bpflag;
+                gatedimplant_82nb_tree->Fill();
+                aida_implant_gated_nb82_xy->Fill(implant_x[j], implant_y[j]);
+                implanted_82Nb++;
+              }
+              filled_gatedimplanttree_82nb.insert(j);
+            }
+          }
+
+          if(nb84_zaoq_cut->IsInside(aoq, z) && nb84_zz2_cut->IsInside(z, z2)){
+            // std::cout << "Passed the cut!" << std::endl;
+            for (int j = 0; j < aidaimphits; j++) {
+              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84nb.count(j) == 0) {
+                // std::cout << "Found an implant!" << std::endl;
+                aida_implant_data.time = implant_time[j];
+                aida_implant_data.x = implant_x[j];
+                aida_implant_data.y = implant_y[j];
+                aida_implant_data.energy = implant_energy[j];
+                aida_implant_data.energy_x = implant_energy_x[j];
+                aida_implant_data.energy_y = implant_energy_y[j];
+                aida_implant_data.sp = spflag;
+                // aida_implant_data.bp = bpflag;
+                gatedimplant_84nb_tree->Fill();
+                aida_implant_gated_nb84_xy->Fill(implant_x[j], implant_y[j]);
+                implanted_84Nb++;
+              }
+              filled_gatedimplanttree_84nb.insert(j);
+            }
+          }
+
+          if(mo84_zaoq_cut->IsInside(aoq, z) && mo84_zz2_cut->IsInside(z, z2)){
+            // std::cout << "Passed the cut!" << std::endl;
+            for (int j = 0; j < aidaimphits; j++) {
+              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84mo.count(j) == 0) {
+                // std::cout << "Found an implant!" << std::endl;
+                aida_implant_data.time = implant_time[j];
+                aida_implant_data.x = implant_x[j];
+                aida_implant_data.y = implant_y[j];
+                aida_implant_data.energy = implant_energy[j];
+                aida_implant_data.energy_x = implant_energy_x[j];
+                aida_implant_data.energy_y = implant_energy_y[j];
+                aida_implant_data.sp = spflag;
+                // aida_implant_data.bp = bpflag;
+                gatedimplant_84mo_tree->Fill();
+                aida_implant_gated_mo84_xy->Fill(implant_x[j], implant_y[j]);
+                implanted_84Mo++;
+              }
+              filled_gatedimplanttree_84mo.insert(j);
+            }
+          }
+
+          if(mo85_zaoq_cut->IsInside(aoq, z) && mo85_zz2_cut->IsInside(z, z2)){
+            // std::cout << "Passed the cut!" << std::endl;
+            for (int j = 0; j < aidaimphits; j++) {
+              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_85mo.count(j) == 0) {
+                // std::cout << "Found an implant!" << std::endl;
+                aida_implant_data.time = implant_time[j];
+                aida_implant_data.x = implant_x[j];
+                aida_implant_data.y = implant_y[j];
+                aida_implant_data.energy = implant_energy[j];
+                aida_implant_data.energy_x = implant_energy_x[j];
+                aida_implant_data.energy_y = implant_energy_y[j];
+                aida_implant_data.sp = spflag;
+                // aida_implant_data.bp = bpflag;
+                gatedimplant_85mo_tree->Fill();
+                aida_implant_gated_mo85_xy->Fill(implant_x[j], implant_y[j]);
+                implanted_85Mo++;
+              }
+              filled_gatedimplanttree_85mo.insert(j);
+            }
+          }
+                
+        }
       }
+    }
 
 
     std::set<int> filled_germtree{};
@@ -470,6 +483,8 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.energy_y = decay_energy_y[i];
             aida_decay_data.sp = spflag;
             // aida_decay_data.bp = bpflag;
+            aida_decay_xy->Fill(decay_x[i], decay_y[i]);
+            aida_decay_energy_xy->Fill(decay_energy_x[i], decay_energy_y[i]);
             decay_tree->Fill();
           }
           filled_aidadecaytree.insert(i);
@@ -486,6 +501,7 @@ void makeAnatrees(const char* input, const char* output) {
           germanium_data.energy = energy;
           germanium_data.sp = spflag;
           germanium_tree->Fill();
+          germanium_energy_hist->Fill(germanium_energy[j]);
         }
       filled_germtree.insert(j);
       }
@@ -536,16 +552,19 @@ void makeAnatrees(const char* input, const char* output) {
 
 
   // Write the new tree to the file
-  // germanium_energy_hist->Write();
-  // aida_implant_xy->Write();
-  // aida_implant_decay_time->Write();
-  // aida_wr_times->Write();
-  // germanium_decay_energy->Write();
-  // aida_decay_xy->Write();
-  // frs_z_z2_hist->Write();
-  //frs_z_aoq_hist->Write();
-  // frs_aoq_x4_hist->Write();
-  // frs_dedeg_z_hist->Write();
+  if (constants::DRAW_HISTS){
+    aida_implant_xy->Write(); 
+    aida_implant_energy_xy->Write(); 
+    aida_implant_gated_nb82_xy->Write(); 
+    aida_implant_gated_nb84_xy->Write();
+    aida_implant_gated_mo84_xy->Write();
+    aida_implant_gated_mo85_xy->Write(); 
+    aida_decay_xy->Write();
+    aida_decay_energy_xy->Write();
+    frs_z_aoq_hist->Write();
+    germanium_energy_hist->Write(); 
+
+  }
 
   std::cout << std::endl;
   std::cout << "Number of 82Nb implants:  " << implanted_82Nb << std::endl;
@@ -553,13 +572,15 @@ void makeAnatrees(const char* input, const char* output) {
   std::cout << "Number of 84Mo implants:  " << implanted_84Mo << std::endl;
   std::cout << "Number of 85Mo implants:  " << implanted_85Mo << std::endl;
   
-  implant_tree->Write();
-  gatedimplant_82nb_tree->Write();
-  gatedimplant_84nb_tree->Write();
-  gatedimplant_84mo_tree->Write();
-  gatedimplant_85mo_tree->Write();
-  decay_tree->Write();
-  germanium_tree->Write();
+  if (constants::MAKE_ANATREES){
+    implant_tree->Write();
+    gatedimplant_82nb_tree->Write();
+    gatedimplant_84nb_tree->Write();
+    gatedimplant_84mo_tree->Write();
+    gatedimplant_85mo_tree->Write();
+    decay_tree->Write();
+    germanium_tree->Write();
+  }
 
   // Close the file
   file->Close();

@@ -17,24 +17,24 @@
 
 
 namespace constants{
-  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
+  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+
+  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 100 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 300 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
   const int64_t PROMPT_WINDOW_START = 14498; 
   const int64_t PROMPT_WINDOW_END = 16498; 
 
-  const double HALF_LIFE = 9.8; // Define half life of isotope of interest 
+  const double HALF_LIFE = 50; // Define half life of isotope of interest 
   const double HALF_LIFE_NS = HALF_LIFE * TIME_SCALE; // Convert half life to ns
 
-  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
-
-  const int LIFETIME_BINS = 500;  // Bin # used for lifetime decay plot 
+  const int LIFETIME_BINS = 300;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
