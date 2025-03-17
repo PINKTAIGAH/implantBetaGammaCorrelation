@@ -17,24 +17,24 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 300 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
   const int64_t PROMPT_WINDOW_START = 14498; 
   const int64_t PROMPT_WINDOW_END = 16498; 
 
-  const double HALF_LIFE = 50; // Define half life of isotope of interest 
+  const double HALF_LIFE = 9.8; // Define half life of isotope of interest 
   const double HALF_LIFE_NS = HALF_LIFE * TIME_SCALE; // Convert half life to ns
 
-  const int LIFETIME_BINS = 300;  // Bin # used for lifetime decay plot 
+  const int LIFETIME_BINS = 50;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
@@ -414,10 +414,6 @@ void ionbeta_experimental(const char* input, const char* output){
     auto [decay_x, decay_y, decay_spill, decay_type] = matched_decay_evt->second;
     int64_t last_matched_decay_time = matched_decay_evt->first;
 
-    //************* DEBUG **************
-    /*std::cout << matched_decay_evt->first << " " << decay_x << " " << decay_y << std::endl;*/
-    //************* DEBUG **************
-
     // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
     auto germanium_start = germanium_map.lower_bound(matched_decay_evt->first - 50e3);
 
@@ -428,13 +424,10 @@ void ionbeta_experimental(const char* input, const char* output){
     // Loop over all germanium events between decay event and end of prompt gamma window
     for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
 
-      int time_diff = germanium_evt->first - last_matched_decay_time; // Find time difference between decay and germanium event
-      
-      //************* DEBUG **************
-      /*std::cout << time_diff << std::endl;*/
-      //************* DEBUG **************
+      /*int time_diff = germanium_evt->first - last_matched_decay_time; // Find time difference between decay and germanium event*/
+      int time_diff = last_matched_decay_time - germanium_evt->first; // Reverse like in jeroens code
 
-      /*if ( time_diff > constants::PROMPT_WINDOW_END ){ break; }*/
+      if ( time_diff > constants::PROMPT_WINDOW_END ){ break; }
 
       // Check if germanium event is within prompt window
       if ( time_diff > constants::PROMPT_WINDOW_START && time_diff < constants::PROMPT_WINDOW_END ){
@@ -445,10 +438,6 @@ void ionbeta_experimental(const char* input, const char* output){
         // Fill gamma energy spectrum and increase counter
         h1_implantbetagamma_spectrum->Fill(germanium_energy); // Fill gamma energy spectrum
         matched_implantbetagamma_counter++;
-
-        //************* DEBUG **************
-        /*std::cout << germanium_energy << std::endl;*/
-        //************* DEBUG **************
       }
 
     } // End of germanium event loop

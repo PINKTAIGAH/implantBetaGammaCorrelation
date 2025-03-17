@@ -6,8 +6,8 @@
 #include <TTreeReaderValue.h>
 
 namespace constants{
-  const bool DRAW_HISTS = true;
-  const bool MAKE_ANATREES = false;
+  const bool DRAW_HISTS = false;
+  const bool MAKE_ANATREES = true;
 }
 
 void makeAnatrees_experimental(const char* input, const char* output) {
@@ -52,7 +52,7 @@ void makeAnatrees_experimental(const char* input, const char* output) {
   TTreeReaderArray<Int_t> decay_adc_side(reader, "AidaDecayCalAdcData.side");
   TTreeReaderArray<Int_t> decay_adc_strip(reader, "AidaDecayCalAdcData.strip");
   TTreeReaderArray<Double_t> decay_energy(reader, "AidaDecayHits.Energy");
-  TTreeReaderArray<Double_t> decay_energy_x(reader, "AidaDecayHits.EnergyX");
+  TTreeReaderArray<Doublif (implant_dssd[j]==1)e_t> decay_energy_x(reader, "AidaDecayHits.EnergyX");
   TTreeReaderArray<Double_t> decay_energy_y(reader, "AidaDecayHits.EnergyY");
   TTreeReaderArray<Double_t> decay_x(reader, "AidaDecayHits.StripX");
   TTreeReaderArray<Double_t> decay_y(reader, "AidaDecayHits.StripY");
