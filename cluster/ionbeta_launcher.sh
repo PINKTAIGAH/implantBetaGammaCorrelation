@@ -51,7 +51,7 @@ gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Data.so");
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4MacroCompiler.so"); 
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Base.so"); 
 
-.x /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/scripts/ionbeta_experimental.C("$infile_dir", "$outfile_dir")
+.x /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/scripts/ionbeta.C("$infile_dir", "$outfile_dir")
 EOF
 
 echo "Finalising job."
