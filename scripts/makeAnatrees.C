@@ -250,7 +250,6 @@ void makeAnatrees(const char* input, const char* output) {
   TH2F* aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
   TH2F* aida_decay_energy_xy = new TH2F("aida_decay_energy_xy", "AIDA Decay Energy XY", 500, 0, 5000, 500, 0, 5000);
   TH1F* aida_decay_energy = new TH1F("aida_decay_energy", "AIDA Decay Energy", 300, 0, 3000);
-  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 1e8, -1e4, 1e9);
   TH1F* aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", number_of_slices, 0, duration_in_seconds);
   TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);
 

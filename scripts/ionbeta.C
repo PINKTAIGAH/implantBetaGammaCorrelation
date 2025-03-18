@@ -220,7 +220,7 @@ void ionbeta(const char* input, const char* output){
     /*}*/
   }
   std::cout << "Finished filling the implant map" << std::endl;
-  std::cout << "Number of All implant events cut on region :" << all_implants_map.size() << std::endl << std::endl;
+  std::cout << "Number of All implant events cut on region: " << all_implants_map.size() << std::endl << std::endl;
 
   // Read decay events
   while (decay_reader.Next()){
@@ -229,14 +229,14 @@ void ionbeta(const char* input, const char* output){
     /*}*/
   }
   std::cout << "Finished filling the decay map" << std::endl;
-  std::cout << "Number of Decay events :" << good_decays_map.size() << std::endl << std::endl;
+  std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
 
   // Read germanium events
   while (germanium_reader.Next()){
     germanium_map.emplace(*germanium_time, std::make_tuple(*germanium_energy, *germanium_spill));
   }
   std::cout << "Finished filling the germanium map" << std::endl;
-  std::cout << "Number of Germanium events :" << germanium_map.size() << std::endl << std::endl;
+  std::cout << "Number of Germanium events: " << germanium_map.size() << std::endl << std::endl;
 
 
   // *************************************************************************************
@@ -303,7 +303,7 @@ void ionbeta(const char* input, const char* output){
         auto [decay_x, decay_y, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
 
         // Skip if not from correct DSSD
-        if ( decay_dssd == 3) { continue; }
+        if ( decay_dssd != 1) { continue; }
 
         // Check for noisy decay branch strips and skip
         if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
