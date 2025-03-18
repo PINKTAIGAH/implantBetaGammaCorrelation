@@ -20,7 +20,7 @@ namespace constants{
   const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
 
   const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
-  const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
+  const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns

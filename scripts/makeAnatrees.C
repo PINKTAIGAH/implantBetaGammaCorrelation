@@ -6,8 +6,8 @@
 #include <TTreeReaderValue.h>
 
 namespace constants{
-  const bool DRAW_HISTS = false;
-  const bool MAKE_ANATREES = true;
+  const bool DRAW_HISTS = true;
+  const bool MAKE_ANATREES = false;
 }
 
 void makeAnatrees(const char* input, const char* output) {
@@ -249,7 +249,7 @@ void makeAnatrees(const char* input, const char* output) {
   TH2F* aida_implant_gated_mo85_xy = new TH2F("aida_implant_gated_mo85_xy", "AIDA Implant XY (Gated ^{85}Mo)", 384, 0, 384, 128, 0, 128);
   TH2F* aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
   TH2F* aida_decay_energy_xy = new TH2F("aida_decay_energy_xy", "AIDA Decay Energy XY", 500, 0, 5000, 500, 0, 5000);
-  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 4e2, -1e4, 1e5);
+  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 4e3, -1e4, 1e6);
   TH1F* aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", number_of_slices, 0, duration_in_seconds);
   TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);
 
@@ -266,6 +266,7 @@ void makeAnatrees(const char* input, const char* output) {
   int64_t tom_start = 1714192595223307800;
   int64_t tom_end = 1714207628772594000;
 
+  int64_t last_implant_time = 0;
 
   // Loop over all entries in the old tree
   while (reader.Next()) {
@@ -511,17 +512,34 @@ void makeAnatrees(const char* input, const char* output) {
       }
     }
     
-    // Decays in coincidence with Germanium
-    if(aidadecayhits > 0 && germaniumhits > 0){
-      for (int i = 0; i < aidadecayhits; i++){
-        if (decay_dssd[i] == 1){
-          for (int j = 0; j < germaniumhits; j++){
-            if (germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0){
-              // if ((decay_time[i] - germanium_abs_ev_time[j]) > 14458 && (decay_time[i] - germanium_abs_ev_time[j]) < 16458) 
-              aida_decay_germanium_dt->Fill(decay_time[i]-germanium_abs_ev_time[j]);
+    if (constants::DRAW_HISTS){
+      // Decays in coincidence with Germanium
+      if(aidadecayhits > 0 && germaniumhits > 0){
+        for (int i = 0; i < aidadecayhits; i++){
+          if (decay_dssd[i] == 1){
+            for (int j = 0; j < germaniumhits; j++){
+              if (germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0){
+                // if ((decay_time[i] - germanium_abs_ev_time[j]) > 14458 && (decay_time[i] - germanium_abs_ev_time[j]) < 16458) 
+                aida_decay_germanium_dt->Fill(decay_time[i]-germanium_abs_ev_time[j]);
+              }
             }
-          }
-        }                
+          }                
+        }
+      }
+    }
+
+    if (constants::DRAW_HISTS){
+      if ( aidaimphits > 0){
+        for (int i = 0; i<aidaimphits; i++){
+          last_implant_time = implant_time[i];
+          break;
+        }
+      }
+
+      if ( aidadecayhits > 0  && last_implant_time != 0){
+        for (int i = 0; i<aidadecayhits; i++){
+          aida_implant_decay_time->Fill( decay_time[i] - last_implant_time );
+        }
       }
     }
 
@@ -548,6 +566,7 @@ void makeAnatrees(const char* input, const char* output) {
     frs_z_aoq_hist->Write();
     germanium_energy_hist->Write(); 
     aida_decay_germanium_dt->Write();
+    aida_implant_decay_time->Write();
   }
 
   std::cout << std::endl;
