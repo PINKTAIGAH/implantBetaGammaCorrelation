@@ -249,7 +249,8 @@ void makeAnatrees(const char* input, const char* output) {
   TH2F* aida_implant_gated_mo85_xy = new TH2F("aida_implant_gated_mo85_xy", "AIDA Implant XY (Gated ^{85}Mo)", 384, 0, 384, 128, 0, 128);
   TH2F* aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
   TH2F* aida_decay_energy_xy = new TH2F("aida_decay_energy_xy", "AIDA Decay Energy XY", 500, 0, 5000, 500, 0, 5000);
-  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 4e3, -1e4, 1e6);
+  TH1F* aida_decay_energy = new TH1F("aida_decay_energy", "AIDA Decay Energy", 300, 0, 3000);
+  TH1F* aida_implant_decay_time = new TH1F("aida_implant_decay_time", "AIDA Implant Decay Time", 1e8, -1e4, 1e9);
   TH1F* aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", number_of_slices, 0, duration_in_seconds);
   TH1F* germanium_decay_energy = new TH1F("germanium_decay_energy", "Germanium Decay Energy", 1.5e3, 0, 1.5e3);
 
@@ -345,8 +346,8 @@ void makeAnatrees(const char* input, const char* output) {
         aida_implant_data.sp = spflag;
         // aida_implant_data.bp = bpflag;
 
-        if (implant_dssd[j]==1) {aida_implant_xy->Fill(implant_x[j], implant_y[j]);}
-        if (implant_dssd[j]==1) {aida_implant_energy_xy->Fill(implant_energy_x[j], implant_energy_y[j]);}
+        if (implant_dssd[j]==1 && constants::DRAW_HISTS) {aida_implant_xy->Fill(implant_x[j], implant_y[j]);}
+        if (implant_dssd[j]==1 && constants::DRAW_HISTS) {aida_implant_energy_xy->Fill(implant_energy_x[j], implant_energy_y[j]);}
         implant_tree->Fill();
               // if(implant_x[j] >270 && implant_x[j] < 370 && implant_y[j] > 20 && implant_y[j] < 90){
               //     aida_implant_xy->Fill(implant_x[j], implant_y[j]);
@@ -380,7 +381,9 @@ void makeAnatrees(const char* input, const char* output) {
           double aoq = AoQ[i];
           double z = Z[i];
           double z2 = Z[i];
-          frs_z_aoq_hist->Fill(aoq, z);
+          if (constants::DRAW_HISTS){
+            frs_z_aoq_hist->Fill(aoq, z);
+          }
 
           if(nb82_zaoq_cut->IsInside(aoq, z) && nb82_zz2_cut->IsInside(z, z2)){
             // std::cout << "Passed the cut!" << std::endl;
@@ -396,7 +399,9 @@ void makeAnatrees(const char* input, const char* output) {
                 aida_implant_data.sp = spflag;
                 // aida_implant_data.bp = bpflag;
                 gatedimplant_82nb_tree->Fill();
-                aida_implant_gated_nb82_xy->Fill(implant_x[j], implant_y[j]);
+                if (constants::DRAW_HISTS){
+                  aida_implant_gated_nb82_xy->Fill(implant_x[j], implant_y[j]);
+                }
                 implanted_82Nb++;
               }
               filled_gatedimplanttree_82nb.insert(j);
@@ -417,7 +422,9 @@ void makeAnatrees(const char* input, const char* output) {
                 aida_implant_data.sp = spflag;
                 // aida_implant_data.bp = bpflag;
                 gatedimplant_84nb_tree->Fill();
-                aida_implant_gated_nb84_xy->Fill(implant_x[j], implant_y[j]);
+                if (constants::DRAW_HISTS){
+                  aida_implant_gated_nb84_xy->Fill(implant_x[j], implant_y[j]);
+                }
                 implanted_84Nb++;
               }
               filled_gatedimplanttree_84nb.insert(j);
@@ -438,7 +445,9 @@ void makeAnatrees(const char* input, const char* output) {
                 aida_implant_data.sp = spflag;
                 // aida_implant_data.bp = bpflag;
                 gatedimplant_84mo_tree->Fill();
-                aida_implant_gated_mo84_xy->Fill(implant_x[j], implant_y[j]);
+                if (constants::DRAW_HISTS){
+                  aida_implant_gated_mo84_xy->Fill(implant_x[j], implant_y[j]);
+                }
                 implanted_84Mo++;
               }
               filled_gatedimplanttree_84mo.insert(j);
@@ -459,7 +468,9 @@ void makeAnatrees(const char* input, const char* output) {
                 aida_implant_data.sp = spflag;
                 // aida_implant_data.bp = bpflag;
                 gatedimplant_85mo_tree->Fill();
-                aida_implant_gated_mo85_xy->Fill(implant_x[j], implant_y[j]);
+                if (constants::DRAW_HISTS){
+                  aida_implant_gated_mo85_xy->Fill(implant_x[j], implant_y[j]);
+                }
                 implanted_85Mo++;
               }
               filled_gatedimplanttree_85mo.insert(j);
@@ -488,9 +499,12 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.dssd = decay_dssd[i];
             aida_decay_data.sp = spflag;
             // aida_decay_data.bp = bpflag;
-            aida_decay_xy->Fill(decay_x[i], decay_y[i]);
-            aida_decay_energy_xy->Fill(decay_energy_x[i], decay_energy_y[i]);
             decay_tree->Fill();
+            if (decay_dssd[i] == 1 && constants::DRAW_HISTS){
+              aida_decay_xy->Fill(decay_x[i], decay_y[i]);
+              aida_decay_energy->Fill(decay_energy[i]);
+              aida_decay_energy_xy->Fill(decay_energy_x[i], decay_energy_y[i]);
+            }
           }
           filled_aidadecaytree.insert(i);
         }
@@ -506,7 +520,9 @@ void makeAnatrees(const char* input, const char* output) {
           germanium_data.energy = energy;
           germanium_data.sp = spflag;
           germanium_tree->Fill();
-          germanium_energy_hist->Fill(germanium_energy[j]);
+          if (constants::DRAW_HISTS){
+            germanium_energy_hist->Fill(germanium_energy[j]);
+          }
         }
       filled_germtree.insert(j);
       }
@@ -524,21 +540,6 @@ void makeAnatrees(const char* input, const char* output) {
               }
             }
           }                
-        }
-      }
-    }
-
-    if (constants::DRAW_HISTS){
-      if ( aidaimphits > 0){
-        for (int i = 0; i<aidaimphits; i++){
-          last_implant_time = implant_time[i];
-          break;
-        }
-      }
-
-      if ( aidadecayhits > 0  && last_implant_time != 0){
-        for (int i = 0; i<aidadecayhits; i++){
-          aida_implant_decay_time->Fill( decay_time[i] - last_implant_time );
         }
       }
     }
@@ -563,6 +564,7 @@ void makeAnatrees(const char* input, const char* output) {
     aida_implant_gated_mo85_xy->Write(); 
     aida_decay_xy->Write();
     aida_decay_energy_xy->Write();
+    aida_decay_energy->Write();
     frs_z_aoq_hist->Write();
     germanium_energy_hist->Write(); 
     aida_decay_germanium_dt->Write();
