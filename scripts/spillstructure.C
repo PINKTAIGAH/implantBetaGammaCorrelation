@@ -18,7 +18,7 @@
 
 namespace constants{
 
-  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "85mo"; // Name suffix for gatedimplant tree & branch in anatree
 //
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
   const int64_t TIME_THRESHOLD = 60* TIME_SCALE; // Time threshold for implant beta correlation
@@ -149,8 +149,11 @@ void spillstructure(const char* input, const char* output){
 
   // Histograms for implant beta matches
   TH1D* h1_implant_decay_time_difference = new TH1D("implant_decay_time_difference", "Implant-Decay Time Difference; dt (s); Counts", 4000, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1D* h1_implant_decay_time_difference_offspill = new TH1D("implant_decay_time_difference_offspill", "Implant-Decay Time Difference (Offspill); dt (s); Counts", 4000, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
   TH1D* h1_decay_energy = new TH1D("decay_energy", "Decay Energy; Energy (keV); Counts", 700, 0, 3000);
   TH2D* h2_decay_energy_xy = new TH2D("decay_energy_xy", "Decay Energy XY; Energy X (keV); Energy Y (keV)", 700, 0, 3000, 700, 0, 3000);
+  TH2D* h2_decay_energy_strip_matrix_x = new TH2D("decay_energy_strip_matrix_x", "Decay Energy Strip Matrix X; Strip X ;  Energy X (keV)", 384, 0, 384, 1000, 0, 1000);
+  TH2D* h2_decay_energy_strip_matrix_y = new TH2D("decay_energy_strip_matrix_y", "Decay Energy Strip Matrix Y; Strip Y ;  Energy Y (keV)", 128, 0, 128, 1000, 0, 1000);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -162,20 +165,20 @@ void spillstructure(const char* input, const char* output){
   // Read implant events
   while (implant_reader.Next()){
     /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
-      implants_map.emplace(*implant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
-    /*}*/
-  }
-  std::cout << "Finished filling the gated implant map" << std::endl;
-  std::cout << "Number of All gated implant events cut on region: " << gatedimplants_map.size() << std::endl << std::endl;
-
-  // Read gated implant events
-  while (gated_implant_reader.Next()){
-    /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
-      gated_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_dssd, IMPLANT));
+      implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_dssd, IMPLANT));
     /*}*/
   }
   std::cout << "Finished filling the implant map" << std::endl;
-  std::cout << "Number of All implant events cut on region: " << gated_implants_map.size() << std::endl << std::endl;
+  std::cout << "Number of Allimplant events cut on region: " << implants_map.size() << std::endl << std::endl;
+
+  // Read gated implant events
+  while (gatedimplant_reader.Next()){
+    /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
+      gated_implants_map.emplace(*implant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
+    /*}*/
+  }
+  std::cout << "Finished filling the gated implant map" << std::endl;
+  std::cout << "Number of All gated implant events cut on region: " << gated_implants_map.size() << std::endl << std::endl;
 
   // Read decay events
   while (decay_reader.Next()){
@@ -237,7 +240,10 @@ void spillstructure(const char* input, const char* output){
         h2_decay_energy_xy->Fill(decay_ex, decay_ey);
 
         // Energy Cuts
-        if ( decay_e < 150 && decay_e > 1e3 ){ continue; }
+        if ( decay_e < 150 || decay_e > 1e3 ){ continue; }
+
+        h2_decay_energy_strip_matrix_x->Fill(decay_x, decay_ex);
+        h2_decay_energy_strip_matrix_y->Fill(decay_y, decay_ey);
   
         // Break out of loop if decay events are now outside of time window
         if ( decay_evt->first > last_implant_time + constants::TIME_THRESHOLD ){ break; }
@@ -260,6 +266,7 @@ void spillstructure(const char* input, const char* output){
             // *************************************************************************************
             
             h1_implant_decay_time_difference->Fill(time_diff);
+            if ( decay_spill!=1 ){ h1_implant_decay_time_difference_offspill->Write(); }
           }
 
           // Check if decay event falls within time threshold and decay event occures before implant event 
@@ -270,6 +277,7 @@ void spillstructure(const char* input, const char* output){
             // *************************************************************************************
 
             h1_implant_decay_time_difference->Fill(time_diff);
+            if ( decay_spill!=1 ){ h1_implant_decay_time_difference_offspill->Write(); }
           }
 
         }
@@ -281,7 +289,7 @@ void spillstructure(const char* input, const char* output){
     implant_counter++;
 
     if (implant_counter % 25 == 0){
-      std::cout << "Finished looping over implant " << implant_counter << "/" << implants_map.size() << std::endl;
+      std::cout << "Finished looping over implant " << implant_counter << "/" << gated_implants_map.size() << std::endl;
     }
 
   } // End of gated implant event loop
@@ -291,8 +299,11 @@ void spillstructure(const char* input, const char* output){
   // *************************************************************************************
   
   h1_implant_decay_time_difference->Write();
+  h1_implant_decay_time_difference_offspill->Write();
   h1_decay_energy->Write();
   h2_decay_energy_xy->Write();
+  h2_decay_energy_strip_matrix_x->Write();
+  h2_decay_energy_strip_matrix_y->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 
