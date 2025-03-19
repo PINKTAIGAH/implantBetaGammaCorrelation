@@ -17,6 +17,6 @@ sbatch -J ionbeta \
 --array=1-$NFILES \
 -o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/ionbeta_%A_%a.out.log \
 -e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/ionbeta_%A_%e.err.log \
--- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/ionbeta_launcher.sh
+-- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/launchers/ionbeta_launcher.sh
 
 unset size

@@ -17,6 +17,6 @@ sbatch -J s101_trees \
 --array=1-$NFILES \
 -o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/anatrees_%A_%a.out.log \
 -e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/anatrees_%A_%e.err.log \
--- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/anatree_launcher.sh
+-- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/launchers/anatree_launcher.sh
 
 unset size

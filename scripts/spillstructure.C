@@ -19,7 +19,7 @@
 namespace constants{
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 100* TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_THRESHOLD = 60* TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const int LIFETIME_BINS = 300;  // Bin # used for lifetime decay plot 
@@ -45,7 +45,7 @@ enum EventType { GATEDIMPLANT, IMPLANT, DECAY }; // Tags for event type
 
 // Multimaps to hold events from anatrees
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> implants_map;
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_decays_map;
+std::multimap<int64_t, std::tuple<double, double, double, double, double, int, int, EventType>> good_decays_map;
 std::multimap<int64_t, std::tuple<double, int>> germanium_map;
 
 // *************************************************************************************
@@ -80,7 +80,7 @@ bool isNoisyStrip(std::vector<double> noisy_strip_vector, double event_strip){
 // ****************************** START MACRO ******************************************
 // *************************************************************************************
 
-void ionbeta_spill_structure(const char* input, const char* output){
+void spillstructure(const char* input, const char* output){
   
   // Load in input file 
   TFile* file = TFile::Open(input);
@@ -133,7 +133,9 @@ void ionbeta_spill_structure(const char* input, const char* output){
   // *************************************************************************************
 
   // Histograms for implant beta matches
-  TH1D* h1_implant_decay_time_difference = new TH1D("implant_decay_time_difference", "Implant-Decay Time Difference; dt (s); Counts", 700, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1D* h1_implant_decay_time_difference = new TH1D("implant_decay_time_difference", "Implant-Decay Time Difference; dt (s); Counts", 4000, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1D* h1_decay_energy = new TH1D("decay_energy", "Decay Energy; Energy (keV); Counts", 700, 0, 3000);
+  TH2D* h2_decay_energy_xy = new TH2D("decay_energy_xy", "Decay Energy XY; Energy X (keV); Energy Y (keV)", 700, 0, 3000, 700, 0, 3000);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -154,7 +156,7 @@ void ionbeta_spill_structure(const char* input, const char* output){
   // Read decay events
   while (decay_reader.Next()){
     /*if(*decay_x > 250 && *decay_x < 350 && *decay_y > 40 && *decay_y < 110){*/
-      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill/*, decay_bplast*/, DECAY));
+      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_e, *decay_ex, *decay_ey, *decay_dssd, *decay_spill/*, decay_bplast*/, DECAY));
     /*}*/
   }
   std::cout << "Finished filling the decay map" << std::endl;
@@ -199,15 +201,19 @@ void ionbeta_spill_structure(const char* input, const char* output){
 
       // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
       for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
-  
-        // Break out of loop if decay events are now outside of time window
-        if ( decay_evt->first > last_implant_time + 60*constants::TIME_THRESHOLD ){ break; }
 
         // Unpack event variables for current decay event
-        auto [decay_x, decay_y, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
+        auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
+
+        // Fill decay histograms
+        h1_decay_energy->Fill(decay_e);
+        h2_decay_energy_xy->Fill(decay_ex, decay_ey);
 
         // Skip if not from correct DSSD
         if ( decay_dssd != 1) { continue; }
+  
+        // Break out of loop if decay events are now outside of time window
+        if ( decay_evt->first > last_implant_time + constants::TIME_THRESHOLD ){ break; }
 
         // Check for noisy decay branch strips and skip
         if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
@@ -258,6 +264,8 @@ void ionbeta_spill_structure(const char* input, const char* output){
   // *************************************************************************************
   
   h1_implant_decay_time_difference->Write();
+  h1_decay_energy->Write();
+  h2_decay_energy_xy->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 

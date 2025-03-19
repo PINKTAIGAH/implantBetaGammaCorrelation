@@ -1,5 +1,5 @@
 # Ignore these repositories
-cluster/logs/
+# cluster/logs/
 # outputs/*
 # histos/*
 # anatrees/*
