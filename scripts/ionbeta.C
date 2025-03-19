@@ -18,6 +18,7 @@
 
 namespace constants{
   const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
@@ -261,7 +262,7 @@ void ionbeta(const char* input, const char* output){
     auto [x, y, spill, dssd, type] = gimp_evt->second;
 
     // Continue loop only if gated implant occured in DSSSD 1 (AIDA)
-    if (type == GATEDIMPLANT && dssd == 1){
+    if (type == GATEDIMPLANT && dssd == constants::DSSD){
 
       // Check noisy implant channel strips and skip
       if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
@@ -303,7 +304,7 @@ void ionbeta(const char* input, const char* output){
         auto [decay_x, decay_y, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
 
         // Skip if not from correct DSSD
-        if ( decay_dssd != 1) { continue; }
+        if ( decay_dssd != constants::DSSD) { continue; }
 
         // Check for noisy decay branch strips and skip
         if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }

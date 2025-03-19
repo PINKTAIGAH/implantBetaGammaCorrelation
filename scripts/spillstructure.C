@@ -18,6 +18,8 @@
 
 namespace constants{
 
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
+//
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
   const int64_t TIME_THRESHOLD = 60* TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
@@ -45,6 +47,7 @@ enum EventType { GATEDIMPLANT, IMPLANT, DECAY }; // Tags for event type
 
 // Multimaps to hold events from anatrees
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> implants_map;
+std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> gated_implants_map;
 std::multimap<int64_t, std::tuple<double, double, double, double, double, int, int, EventType>> good_decays_map;
 std::multimap<int64_t, std::tuple<double, int>> germanium_map;
 
@@ -93,6 +96,7 @@ void spillstructure(const char* input, const char* output){
   
   // Get the trees
   TTree* implant_tree = (TTree*)file->Get("aida_implant_tree");
+  TTree* gatedimplant_tree = (TTree*)file->Get( (std::string("aida_gatedimplant_")+constants::ISOTOPE_TREE+std::string("_tree") ).c_str() );
   TTree* decay_tree = (TTree*)file->Get("aida_decay_tree");
   
   // Open output file
@@ -104,6 +108,7 @@ void spillstructure(const char* input, const char* output){
 
   // Create tree readers objects
   TTreeReader implant_reader(implant_tree);
+  TTreeReader gatedimplant_reader(gatedimplant_tree);
   TTreeReader decay_reader(decay_tree);
 
   // Define leaves of variables for implant tree
@@ -116,6 +121,16 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<double> implant_ey(implant_reader, "implant.ey");
   TTreeReaderValue<Int_t> implant_spill(implant_reader, "implant.sp"); // sp = 1 spill, sp = 2 no spill
   /*TTreeReaderValue<Int_t> implant_bplast(implant_reader, "implant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
+
+  // Define leaves of variables for gated implant tree
+  TTreeReaderValue<ULong64_t> gatedimplant_time(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".time") ).c_str());
+  TTreeReaderValue<double> gatedimplant_x(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".x") ).c_str());
+  TTreeReaderValue<double> gatedimplant_y(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".y") ).c_str());
+  TTreeReaderValue<int> gatedimplant_dssd(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".dssd") ).c_str());
+  TTreeReaderValue<double> gatedimplant_e(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".e") ).c_str());
+  TTreeReaderValue<double> gatedimplant_ex(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ex") ).c_str());
+  TTreeReaderValue<double> gatedimplant_ey(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ey") ).c_str());
+  TTreeReaderValue<Int_t> gatedimplant_spill(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".sp") ).c_str()); // sp = 1 spill, sp = 2 no spill
 
   // Define leaves of variables for decay tree
   TTreeReaderValue<ULong64_t> decay_time(decay_reader, "decay.time");
@@ -147,11 +162,20 @@ void spillstructure(const char* input, const char* output){
   // Read implant events
   while (implant_reader.Next()){
     /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
-      implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_dssd, IMPLANT));
+      implants_map.emplace(*implant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
+    /*}*/
+  }
+  std::cout << "Finished filling the gated implant map" << std::endl;
+  std::cout << "Number of All gated implant events cut on region: " << gatedimplants_map.size() << std::endl << std::endl;
+
+  // Read gated implant events
+  while (gated_implant_reader.Next()){
+    /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
+      gated_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_dssd, IMPLANT));
     /*}*/
   }
   std::cout << "Finished filling the implant map" << std::endl;
-  std::cout << "Number of All implant events cut on region: " << implants_map.size() << std::endl << std::endl;
+  std::cout << "Number of All implant events cut on region: " << gated_implants_map.size() << std::endl << std::endl;
 
   // Read decay events
   while (decay_reader.Next()){
@@ -173,7 +197,7 @@ void spillstructure(const char* input, const char* output){
   int implant_counter = 0;
 
   // Loop over all gated implant events in map and perform a beta match
-  for (auto imp_evt = implants_map.begin(); imp_evt != implants_map.end(); imp_evt++){
+  for (auto imp_evt = gated_implants_map.begin(); imp_evt != gated_implants_map.end(); imp_evt++){
     
     // Unpack event variables for current gated implant event
     auto [x, y, spill, dssd, type] = imp_evt->second;
@@ -205,12 +229,15 @@ void spillstructure(const char* input, const char* output){
         // Unpack event variables for current decay event
         auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
 
+        // Skip if not from correct DSSD
+        if ( decay_dssd != 1){ continue; }
+
         // Fill decay histograms
         h1_decay_energy->Fill(decay_e);
         h2_decay_energy_xy->Fill(decay_ex, decay_ey);
 
-        // Skip if not from correct DSSD
-        if ( decay_dssd != 1) { continue; }
+        // Energy Cuts
+        if ( decay_e < 150 && decay_e > 1e3 ){ continue; }
   
         // Break out of loop if decay events are now outside of time window
         if ( decay_evt->first > last_implant_time + constants::TIME_THRESHOLD ){ break; }

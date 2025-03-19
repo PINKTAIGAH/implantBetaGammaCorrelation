@@ -8,6 +8,8 @@
 namespace constants{
   const bool DRAW_HISTS = false;
   const bool MAKE_ANATREES = true;
+
+  const int DSSD = 3;
 }
 
 void makeAnatrees(const char* input, const char* output) {
@@ -327,7 +329,7 @@ void makeAnatrees(const char* input, const char* output) {
     if(aidaimphits > 0){
       for (int j = 0; j < aidaimphits; j++) {
 
-        if (implant_dssd[j] == 1 && implant_stopped[j] == true){
+        if (implant_dssd[j] == constants::DSSD && implant_stopped[j] == true){
           stopped = 1;
         } 
         else {
@@ -345,8 +347,8 @@ void makeAnatrees(const char* input, const char* output) {
         aida_implant_data.sp = spflag;
         // aida_implant_data.bp = bpflag;
 
-        if (implant_dssd[j]==1 && constants::DRAW_HISTS) {aida_implant_xy->Fill(implant_x[j], implant_y[j]);}
-        if (implant_dssd[j]==1 && constants::DRAW_HISTS) {aida_implant_energy_xy->Fill(implant_energy_x[j], implant_energy_y[j]);}
+        if (implant_dssd[j]==constants::DSSD && constants::DRAW_HISTS) {aida_implant_xy->Fill(implant_x[j], implant_y[j]);}
+        if (implant_dssd[j]==constants::DSSD && constants::DRAW_HISTS) {aida_implant_energy_xy->Fill(implant_energy_x[j], implant_energy_y[j]);}
         implant_tree->Fill();
               // if(implant_x[j] >270 && implant_x[j] < 370 && implant_y[j] > 20 && implant_y[j] < 90){
               //     aida_implant_xy->Fill(implant_x[j], implant_y[j]);
@@ -387,7 +389,7 @@ void makeAnatrees(const char* input, const char* output) {
           if(nb82_zaoq_cut->IsInside(aoq, z) && nb82_zz2_cut->IsInside(z, z2)){
             // std::cout << "Passed the cut!" << std::endl;
             for (int j = 0; j < aidaimphits; j++) {
-              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_82nb.count(j) == 0) {
+              if (implant_dssd[j] == constants::DSSD && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_82nb.count(j) == 0) {
                 // std::cout << "Found an implant!" << std::endl;
                 aida_implant_data.time = implant_time[j];
                 aida_implant_data.x = implant_x[j];
@@ -410,7 +412,7 @@ void makeAnatrees(const char* input, const char* output) {
           if(nb84_zaoq_cut->IsInside(aoq, z) && nb84_zz2_cut->IsInside(z, z2)){
             // std::cout << "Passed the cut!" << std::endl;
             for (int j = 0; j < aidaimphits; j++) {
-              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84nb.count(j) == 0) {
+              if (implant_dssd[j] == constants::DSSD && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84nb.count(j) == 0) {
                 // std::cout << "Found an implant!" << std::endl;
                 aida_implant_data.time = implant_time[j];
                 aida_implant_data.x = implant_x[j];
@@ -433,7 +435,7 @@ void makeAnatrees(const char* input, const char* output) {
           if(mo84_zaoq_cut->IsInside(aoq, z) && mo84_zz2_cut->IsInside(z, z2)){
             // std::cout << "Passed the cut!" << std::endl;
             for (int j = 0; j < aidaimphits; j++) {
-              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84mo.count(j) == 0) {
+              if (implant_dssd[j] == constants::DSSD && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_84mo.count(j) == 0) {
                 // std::cout << "Found an implant!" << std::endl;
                 aida_implant_data.time = implant_time[j];
                 aida_implant_data.x = implant_x[j];
@@ -456,7 +458,7 @@ void makeAnatrees(const char* input, const char* output) {
           if(mo85_zaoq_cut->IsInside(aoq, z) && mo85_zz2_cut->IsInside(z, z2)){
             // std::cout << "Passed the cut!" << std::endl;
             for (int j = 0; j < aidaimphits; j++) {
-              if (implant_dssd[j] == 1 && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_85mo.count(j) == 0) {
+              if (implant_dssd[j] == constants::DSSD && /*implant_stopped[j] == true &&*/ filled_gatedimplanttree_85mo.count(j) == 0) {
                 // std::cout << "Found an implant!" << std::endl;
                 aida_implant_data.time = implant_time[j];
                 aida_implant_data.x = implant_x[j];
