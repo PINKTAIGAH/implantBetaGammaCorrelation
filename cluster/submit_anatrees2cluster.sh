@@ -1,5 +1,5 @@
 #!/bin/bash
-LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list.txt"
+LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list_bb7left.txt"
 NFILES=$(cat ${LISTFILE} | wc -l)
 
 declare -a size
@@ -11,7 +11,7 @@ done < "$LISTFILE"
 
 echo "Making trees from " $NFILES " lmd files."
 
-sbatch -J s101_trees \
+sbatch -J s101_anatrees \
 --cpus-per-task=2 \
 --mem-per-cpu=8G \
 --array=1-$NFILES \

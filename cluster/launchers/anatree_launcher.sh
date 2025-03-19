@@ -21,7 +21,7 @@ export SIMPATH=/cvmfs/fairsoft.gsi.de/debian11/fairsoft/nov22p1
 export UCESB_DIR=/lustre/gamma/gbrunic/G302/ucesb
 export UCESB_BASE_DIR=/lustre/gamma/gbrunic/G302/ucesb
 
-LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list.txt"
+LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list_bb7left.txt"
 NFILES=$(cat ${LISTFILE} | wc -l)
 echo "Analysing" $NFILES " files"
 

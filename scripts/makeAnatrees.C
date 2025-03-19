@@ -6,8 +6,8 @@
 #include <TTreeReaderValue.h>
 
 namespace constants{
-  const bool DRAW_HISTS = true;
-  const bool MAKE_ANATREES = false;
+  const bool DRAW_HISTS = false;
+  const bool MAKE_ANATREES = true;
 }
 
 void makeAnatrees(const char* input, const char* output) {
@@ -567,7 +567,6 @@ void makeAnatrees(const char* input, const char* output) {
     frs_z_aoq_hist->Write();
     germanium_energy_hist->Write(); 
     aida_decay_germanium_dt->Write();
-    aida_implant_decay_time->Write();
   }
 
   std::cout << std::endl;
