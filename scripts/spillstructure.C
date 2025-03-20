@@ -17,22 +17,17 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 60 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
-  /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
-  const int64_t PROMPT_WINDOW_START = 13610; 
-  const int64_t PROMPT_WINDOW_END = 16223; 
-
-  const int LIFETIME_BINS = 500;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
@@ -63,20 +58,9 @@ enum EventType { GATEDIMPLANT, IMPLANT, DECAY }; // Tags for event type
 // *************************************************************************************
 
 // Multimaps to hold events from anatrees
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> event_map;
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> gated_implants_map;
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> all_implants_map;
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_impdecays_map;
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_implants_map;
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_decays_map;
-std::multimap<int64_t, std::tuple<double, double, int, EventType>> matched_decays_map;
-std::multimap<int64_t, std::tuple<double, int>> germanium_map;
-
-/*std::map<int64_t, std::tuple<double, double, int, int>> implant_map;*/
-/*std::map<int64_t, std::tuple<double, double, int, int>> gatedimplant_map;*/
-/*std::map<int64_t, std::tuple<double, double, int, int>> decay_map;*/
-/*std::map<int64_t, std::tuple<double,int, int>> germanium_map;*/
-
 
 // *************************************************************************************
 // ****************************** DEFINE FUNCTIONS *************************************
@@ -125,7 +109,6 @@ void spillstructure(const char* input, const char* output){
   TTree* implant_tree = (TTree*)file->Get("aida_implant_tree");
   TTree* gatedimplant_tree = (TTree*)file->Get( (std::string("aida_gatedimplant_")+constants::ISOTOPE_TREE+std::string("_tree") ).c_str() );
   TTree* decay_tree = (TTree*)file->Get("aida_decay_tree");
-  TTree* germanium_tree = (TTree*)file->Get("germanium_tree");
   
   // Open output file
   TFile* outputFile = new TFile(output, "RECREATE");
@@ -138,7 +121,6 @@ void spillstructure(const char* input, const char* output){
   TTreeReader implant_reader(implant_tree);
   TTreeReader gatedimplant_reader(gatedimplant_tree);
   TTreeReader decay_reader(decay_tree);
-  TTreeReader germanium_reader(germanium_tree);
 
   // Define leaves of variables for implant tree
   TTreeReaderValue<ULong64_t> implant_time(implant_reader, "implant.time");
@@ -173,13 +155,6 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<Int_t> decay_spill(decay_reader, "decay.sp"); // sp = 1 spill, sp = 2 no spill
   /*TTreeReaderValue<Int_t> decay_bplast(decay_reader, "decay.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
 
-  // Define leaves of variables for germanium tree
-  TTreeReaderValue<ULong64_t> germanium_time(germanium_reader, "germanium.time");
-  TTreeReaderValue<Double_t> germanium_energy(germanium_reader, "germanium.energy");
-  TTreeReaderValue<Int_t> germanium_spill(germanium_reader, "germanium.sp"); // sp = 1 spill, sp = 2 no spill
-  /*TTreeReaderValue<Int_t> germanium_bplast(germanium_reader, "germanium.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
-
-
   // *************************************************************************************
   // ****************************** DEFINE HISTOGRAMS ************************************
   // *************************************************************************************
@@ -188,18 +163,7 @@ void spillstructure(const char* input, const char* output){
   TH2F* h2_aida_implant_xy = new TH2F("aida_implant_xy", "AIDA Implant XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_matched_xy = new TH2F("aida_matched_xy", "AIDA Matched XY", 384, 0, 384, 128, 0, 128);
-  TH1F* h1_aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
-  TH1F* h1_aida_implant_beta_dt = new TH1F("aida_implant_beta_dt", "Implant-Decay #Deltat;Implant-Decay #Deltat (); Counts/", constants::LIFETIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
-  TH1F* h1_aida_implant_beta_spillstructure = new TH1F("aida_implant_beta_spillstructure", "Implant-Decay Spill structure; #Deltat (); Counts", 1000, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
-
-  // Histograms for beta candidate events
-  TH1F* h1_implantbeta_candidate_multiplicity = new TH1F("implantbeta_candidate_multiplicity", "Implant-Decay Candidate Multiplicity; Candidate Multiplicity; Counts", 100, 0, 100);
-  TH2F* h2_implantbeta_candidate_hitpattern = new TH2F("implantbeta_candidate_hitpattern", "Implant-Decay Canditate; X Strip; Y Strip", constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD,constants::POSITION_THRESHOLD, constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD, constants::POSITION_THRESHOLD);
-  TH1F* h1_implantbeta_candidate_hitpattern_x = new TH1F("implantbeta_candidate_hitpattern_x", "Implant-Decay Canditate X Hit Patterns; Counts; X Strip", constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD, constants::POSITION_THRESHOLD);
-  TH1F* h1_implantbeta_candidate_hitpattern_y = new TH1F("implantbeta_candidate_hitpattern_y", "Implant-Decay Canditate Y Hit Patterns; Counts; Y Strip", constants::NEIGHBOURING_POSITION_BINS, -constants::POSITION_THRESHOLD, constants::POSITION_THRESHOLD);
-
-  // Histograms for gamma correlated events
-  TH1F* h1_implantbetagamma_spectrum = new TH1F("implantbetagamma_spectrum", "Implant-Beta-Gamma Energy Spectrum; Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH1F* h1_aida_implant_beta_spillstructure = new TH1F("aida_implant_beta_spillstructure", "Implant-Decay Spill structure; #Deltat (); Counts", 4000, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -210,7 +174,7 @@ void spillstructure(const char* input, const char* output){
 
   // Read gated implant events
   while (gatedimplant_reader.Next()){
-    gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, GATEDIMPLANT));
+    gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
   }
   std::cout << "Finished filling the gated implant map" << std::endl;
   std::cout << "Number of implant events: " << gated_implants_map.size() << std::endl << std::endl;
@@ -233,14 +197,6 @@ void spillstructure(const char* input, const char* output){
   std::cout << "Finished filling the decay map" << std::endl;
   std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
 
-  // Read germanium events
-  while (germanium_reader.Next()){
-    germanium_map.emplace(*germanium_time, std::make_tuple(*germanium_energy, *germanium_spill));
-  }
-  std::cout << "Finished filling the germanium map" << std::endl;
-  std::cout << "Number of Germanium events: " << germanium_map.size() << std::endl << std::endl;
-
-
   // *************************************************************************************
   // ****************************** LOOP OVER GATED IMPLANTS *****************************
   // *************************************************************************************
@@ -249,21 +205,18 @@ void spillstructure(const char* input, const char* output){
   int64_t last_gatedimplant_time;
   double gatedimplant_pos_x;
   double gatedimplant_pos_y;
-  bool found_forward_candidate;
-  bool found_backwards_candidate;
   int implantbeta_candidate_counter;
   int matched_implantdecays_counter = 0;
   int matched_backwards_implantdecays_counter = 0;
-  int matched_implantbetagamma_counter = 0;
 
   // Loop over all gated implant events in map and perform a beta match
-  for (auto gimp_evt = gated_implants_map.begin(); gimp_evt != gated_implants_map.end(); gimp_evt++){
+  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
     
     // Unpack event variables for current gated implant event
     auto [x, y, spill, dssd, type] = gimp_evt->second;
 
     // Continue loop only if gated implant occured in DSSSD 1 (AIDA)
-    if (type == GATEDIMPLANT && dssd == constants::DSSD){
+    if (type == IMPLANT && dssd == constants::DSSD){
 
       // Check noisy implant channel strips and skip
       if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
@@ -298,9 +251,6 @@ void spillstructure(const char* input, const char* output){
         // Break out of loop if decay events are now outside of time window
         if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
 
-        // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
-        if ( !constants::CHECK_BETA_CANDITATES && found_forward_candidate && found_backwards_candidate ){ break; }
-
         // Unpack event variables for current decay event
         auto [decay_x, decay_y, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
 
@@ -332,24 +282,13 @@ void spillstructure(const char* input, const char* output){
             
             implantbeta_candidate_counter++; // Increase counter for beta canditade event
             h1_aida_implant_beta_spillstructure->Fill(time_diff); // Fill spillstructure histogram
+            h2_aida_matched_xy->Fill(decay_x,decay_y);
 
             // Check that there has not been a forward beta candidate that has been matched to implant event
             if (!found_forward_candidate){
-              
-              // Fill histograms
-              h1_aida_implant_beta_dt->Fill(time_diff/constants::TIME_SCALE);
-              h2_aida_matched_xy->Fill(decay_x,decay_y);
-              h1_aida_wr_times->Fill(decay_evt->first);
 
               matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
               found_forward_candidate = true; // Change flag for succesfull forward implant decay match
-              
-              // Fill map with matched decay events
-              matched_decays_map.emplace(decay_evt->first, std::make_tuple(decay_x, decay_y, decay_spill, DECAY));
-
-              //************* DEBUG **************
-              /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
-              //************* DEBUG **************
             }
 
           }
@@ -366,75 +305,21 @@ void spillstructure(const char* input, const char* output){
             // Check that there has not been a backwards beta candidate that has been matched to implant event
             if (!found_backwards_candidate){
 
-              h1_aida_implant_beta_dt->Fill(time_diff/constants::TIME_SCALE); // Fill_histogram
-
               matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
               found_backwards_candidate = true; // Change flag for succesfull backward implant decay match
-              
-              //************* DEBUG **************
-              /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
-              //************* DEBUG **************
             }
 
           }
-
-          // Fill the histograms with decay candidate events
-          h2_implantbeta_candidate_hitpattern->Fill(decay_x - gatedimplant_pos_x, decay_y - gatedimplant_pos_y);
-          h1_implantbeta_candidate_hitpattern_x->Fill(decay_x - gatedimplant_pos_x);
-          h1_implantbeta_candidate_hitpattern_y->Fill(decay_y - gatedimplant_pos_y);
 
         }
 
       } // End of decay event loop
       
-      // Fill candidate multiplicity histogram
-      h1_implantbeta_candidate_multiplicity->Fill(implantbeta_candidate_counter); 
-
     }
 
   } // End of gated implant event loop
   
  
-  // *************************************************************************************
-  // ************************** MATCHED DECAY - DECAY CORRELATION ************************
-  // *************************************************************************************
-  
-  // Loop over all matched decay events
-  for( auto matched_decay_evt = matched_decays_map.begin(); matched_decay_evt != matched_decays_map.end(); matched_decay_evt++ ){
-    
-    // Unpack matched decay event variables
-    auto [decay_x, decay_y, decay_spill, decay_type] = matched_decay_evt->second;
-    int64_t last_matched_decay_time = matched_decay_evt->first;
-
-    // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
-    auto germanium_start = germanium_map.lower_bound(matched_decay_evt->first - 50e3);
-
-    // *************************************************************************************
-    // **************************  LOOP OVER GERMANIUM EVENTS ******************************
-    // *************************************************************************************
-
-    // Loop over all germanium events between decay event and end of prompt gamma window
-    for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
-
-      /*int time_diff = germanium_evt->first - last_matched_decay_time; // Find time difference between decay and germanium event*/
-      int time_diff = last_matched_decay_time - germanium_evt->first; // Reverse like in jeroens code
-
-      if ( time_diff > constants::PROMPT_WINDOW_END ){ break; }
-
-      // Check if germanium event is within prompt window
-      if ( time_diff > constants::PROMPT_WINDOW_START && time_diff < constants::PROMPT_WINDOW_END ){
-          
-        // Unpack germanium event items within prompt window
-        auto [germanium_energy, germanium_spill] = germanium_evt->second; 
-
-        // Fill gamma energy spectrum and increase counter
-        h1_implantbetagamma_spectrum->Fill(germanium_energy); // Fill gamma energy spectrum
-        matched_implantbetagamma_counter++;
-      }
-
-    } // End of germanium event loop
-      
-  } // End of matched decay event loop
     
   // *************************************************************************************
   // ****************************** PRINT OUT STATISTICS *********************************
@@ -445,23 +330,15 @@ void spillstructure(const char* input, const char* output){
     std::cout << "Matched: " << matched_implantdecays_counter<< " out of " << gated_implants_map.size() << " gated implant events" << std::endl;
     std::cout << "Matched: " << matched_implantdecays_counter << " out of " << all_implants_map.size() << " implant events" << std::endl;
     std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl;
-    std::cout << "Matched: " << matched_implantbetagamma_counter << " implant-beta-gamma events" << std::endl << std::endl;
   
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
   // *************************************************************************************
   
   h2_aida_implant_xy->Write();
-  h1_aida_wr_times->Write();
-  h2_aida_matched_xy->Write();
   h2_aida_decay_xy->Write();
-  h1_aida_implant_beta_dt->Write();
+  h2_aida_matched_xy->Write();
   h1_aida_implant_beta_spillstructure->Write();
-  if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_multiplicity->Write(); }
-  if (constants::CHECK_BETA_CANDITATES){ h2_implantbeta_candidate_hitpattern->Write(); }
-  if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_x->Write(); }
-  if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_y->Write(); }
-  h1_implantbetagamma_spectrum->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 

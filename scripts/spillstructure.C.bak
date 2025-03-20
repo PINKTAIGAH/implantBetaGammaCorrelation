@@ -174,7 +174,7 @@ void spillstructure(const char* input, const char* output){
   // Read gated implant events
   while (gatedimplant_reader.Next()){
     /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
-      gated_implants_map.emplace(*implant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
+      gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
     /*}*/
   }
   std::cout << "Finished filling the gated implant map" << std::endl;
