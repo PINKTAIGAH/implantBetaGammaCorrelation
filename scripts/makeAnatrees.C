@@ -501,7 +501,7 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.sp = spflag;
             // aida_decay_data.bp = bpflag;
             decay_tree->Fill();
-            if (decay_dssd[i] == 1 && constants::DRAW_HISTS){
+            if (decay_dssd[i] == constants::DSSD && constants::DRAW_HISTS){
               aida_decay_xy->Fill(decay_x[i], decay_y[i]);
               aida_decay_energy->Fill(decay_energy[i]);
               aida_decay_energy_xy->Fill(decay_energy_x[i], decay_energy_y[i]);
@@ -533,7 +533,7 @@ void makeAnatrees(const char* input, const char* output) {
       // Decays in coincidence with Germanium
       if(aidadecayhits > 0 && germaniumhits > 0){
         for (int i = 0; i < aidadecayhits; i++){
-          if (decay_dssd[i] == 1){
+          if (decay_dssd[i] == constants::DSSD){
             for (int j = 0; j < germaniumhits; j++){
               if (germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0){
                 // if ((decay_time[i] - germanium_abs_ev_time[j]) > 14458 && (decay_time[i] - germanium_abs_ev_time[j]) < 16458) 
