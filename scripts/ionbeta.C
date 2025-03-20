@@ -17,15 +17,15 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
-  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
+  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 1000 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
@@ -321,13 +321,18 @@ void ionbeta(const char* input, const char* output){
 
           // Find time difference between implant event and decay event
           int64_t time_diff = decay_evt->first - last_gatedimplant_time;
-          
+
           // Check if decay event falls within time threshold and decay event occures after implant event 
           if (time_diff > 0 && time_diff < constants::TIME_THRESHOLD) {
 
             // *************************************************************************************
             // ****************************** FOUND FORWARD BETA CANDIDATE *************************
             // *************************************************************************************
+
+            //******** Experimental **********
+            if ( time_diff < 300e3 ){ continue; }
+            //******** Experimental **********
+          
             
             implantbeta_candidate_counter++; // Increase counter for beta canditade event
 
