@@ -32,7 +32,7 @@ namespace constants{
   const int64_t PROMPT_WINDOW_START = 13610; 
   const int64_t PROMPT_WINDOW_END = 16223; 
 
-  const int LIFETIME_BINS = 200;  // Bin # used for lifetime decay plot 
+  const int LIFETIME_BINS = 500;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
@@ -330,7 +330,7 @@ void ionbeta(const char* input, const char* output){
             // *************************************************************************************
 
             //******** Experimental **********
-            if ( time_diff < 300e3 ){ continue; }
+            if ( time_diff < 60e3 ){ continue; }
             //******** Experimental **********
           
             
