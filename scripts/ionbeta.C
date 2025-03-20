@@ -20,8 +20,8 @@ namespace constants{
   const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
-  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
-  const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
+  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
+  const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
@@ -32,7 +32,7 @@ namespace constants{
   const int64_t PROMPT_WINDOW_START = 13610; 
   const int64_t PROMPT_WINDOW_END = 16223; 
 
-  const int LIFETIME_BINS = 300;  // Bin # used for lifetime decay plot 
+  const int LIFETIME_BINS = 200;  // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
