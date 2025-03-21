@@ -26,7 +26,7 @@ namespace constants{
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
   const int64_t TIME_THRESHOLD = 45 * TIME_SCALE; // Time threshold for implant beta correlation
-  const int64_t TIME_PER_BIN = 100e6; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_PER_BIN = 50e6; // Time per bin in Implant-beta time correlation
   const int64_t SPILLSTRUCTURE_BINS = TIME_THRESHOLD/TIME_PER_BIN;
 
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
@@ -157,8 +157,9 @@ void spillstructure(const char* input, const char* output){
   TH2F* h2_aida_decay_xy = new TH2F("aida_decay_xy", "AIDA Decay XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_matched_onspill_xy = new TH2F("aida_matched_onspill_xy", "AIDA Matched Onspill XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_matched_offspill_xy = new TH2F("aida_matched_offspill_xy", "AIDA Matched Offspill XY", 384, 0, 384, 128, 0, 128);
-  TH1F* h1_aida_implant_beta_onspillstructure = new TH1F("aida_implant_beta_onspillstructure", "Implant-Decay Spill Structure; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
-  TH1F* h1_aida_implant_beta_offspillstructure = new TH1F("aida_implant_beta_offspillstructure", "Implant-Decay Spill Structure; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1F* h1_aida_implant_beta_spillstructure = new TH1F("aida_implant_beta_spillstructure", "Implant-Decay Spill Structure; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1F* h1_aida_implant_beta_onspillstructure = new TH1F("aida_implant_beta_onspillstructure", "Implant-Decay Spill Structure Onspill; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  TH1F* h1_aida_implant_beta_offspillstructure = new TH1F("aida_implant_beta_offspillstructure", "Implant-Decay Spill Structure Offspill; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -285,6 +286,8 @@ void spillstructure(const char* input, const char* output){
               h2_aida_matched_offspill_xy->Fill(decay_x,decay_y);
             }
 
+            h1_aida_implant_beta_spillstructure->Fill(time_diff);
+
             // Check that there has not been a forward beta candidate that has been matched to implant event
             if (!found_forward_candidate){
 
@@ -309,6 +312,8 @@ void spillstructure(const char* input, const char* output){
               h1_aida_implant_beta_offspillstructure->Fill(time_diff); // Fill spillstructure histogram
               h2_aida_matched_offspill_xy->Fill(decay_x,decay_y);
             }
+
+            h1_aida_implant_beta_spillstructure->Fill(time_diff);
 
             // Check that there has not been a backwards beta candidate that has been matched to implant event
             if (!found_backwards_candidate){
@@ -347,6 +352,7 @@ void spillstructure(const char* input, const char* output){
   h2_aida_decay_xy->Write();
   h2_aida_matched_onspill_xy->Write();
   h2_aida_matched_offspill_xy->Write();
+  h1_aida_implant_beta_spillstructure->Write();
   h1_aida_implant_beta_onspillstructure->Write();
   h1_aida_implant_beta_offspillstructure->Write();
 
@@ -354,20 +360,20 @@ void spillstructure(const char* input, const char* output){
 
 
   // *************************************************************************************
-  // ****************************** WRITE CANVASES TO OUTPUT FILE **********************
+  // ****************************** WRITE MERGED TO OUTPUT FILE **********************
   // *************************************************************************************
   
-  TCanvas* c_onoff_spillstructure = new TCanvas("onoff_spillstructure", "", 600,400);
+  THStack* sh1_onoff_spillstructure = new THStack("onoff_spillstructure", "");
 
   h1_aida_implant_beta_onspillstructure->SetLineColor(kBlue);
-  h1_aida_implant_beta_onspillstructure->SetLineWidth(3);
-  h1_aida_implant_beta_onspillstructure->Draw();
+  /*h1_aida_implant_beta_onspillstructure->SetLineWidth(3);*/
+  sh1_onoff_spillstructure->Add(h1_aida_implant_beta_onspillstructure);
 
   h1_aida_implant_beta_offspillstructure->SetLineColor(kRed);
-  h1_aida_implant_beta_offspillstructure->SetLineWidth(3);
-  h1_aida_implant_beta_offspillstructure->Draw("SAME");
+  /*h1_aida_implant_beta_offspillstructure->SetLineWidth(3);*/
+  sh1_onoff_spillstructure->Add(h1_aida_implant_beta_offspillstructure);
 
-  c_onoff_spillstructure->Write();
+  sh1_onoff_spillstructure->Write();
 
   std::cout << "Finished writing the canvases" << std::endl;
 
