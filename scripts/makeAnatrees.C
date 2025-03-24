@@ -10,18 +10,20 @@
 // *************************************************************************************
 
 namespace constants{
-  const bool DRAW_HISTS = false;
-  const bool MAKE_ANATREES = true;
 
-  const int DSSD = 3;
+  const int DSSD = 1;
   const std::string BROKEN_STRIPS_INFILE = "/lustre/gamma/jeroen/S100/analysis/betaion/AIDA_strips.txt";
+
+  const int TOTAL_GERMANIUM_DETECTORS = 15; // Number of germanium detectors 
+  const int TOTAL_GERMANIUM_CRYSTALS = 2; // Number of germanium crystals
 
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
     {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82Nb.root"},
     {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Nb.root"},
     {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Mo.root"},
     {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root"}
-  }
+  };
+
 }
 
 // *************************************************************************************
@@ -517,9 +519,14 @@ void makeAnatrees(const char* input, const char* output) {
     }
 
 
+    // *************************************************************************************
+    // ****************************** LOOP OVER DECAY EVENTS *******************************
+    // *************************************************************************************
+
+    // Empty set for each subevents
     std::set<int> aidadecay_filledtree{};
 
-    // Decays only
+    // Loop over decay subevents
     if(aidadecayhits == 1){
 
       for (int i = 0; i < aidadecayhits; i++) {
@@ -544,12 +551,17 @@ void makeAnatrees(const char* input, const char* output) {
 
     }
 
-    // Germaniums only
+    // *************************************************************************************
+    // ****************************** LOOP OVER DECAY EVENTS *******************************
+    // *************************************************************************************
+
+    
     std::set<int> germanium_filledtree{};
 
+    // Loop over decay subevents
     for (int j = 0; j < germaniumhits; j++){
 
-      if ( germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
+      if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
 
         if ( germanium_filledtree.count(j) == 0 ){
 
@@ -576,21 +588,36 @@ void makeAnatrees(const char* input, const char* output) {
   
   }
 
-
-
   std::cout << std::endl;
-  std::cout << "Number of 82Nb implants:  " << implanted_82Nb << std::endl;
-  std::cout << "Number of 84Nb implants:  " << implanted_84Nb << std::endl;
-  std::cout << "Number of 84Mo implants:  " << implanted_84Mo << std::endl;
-  std::cout << "Number of 85Mo implants:  " << implanted_85Mo << std::endl;
+
+  // *************************************************************************************
+  // ****************************** PRINT STATISTICS *************************************
+  // *************************************************************************************
+
+  // Loop over counter map and print statistics
+  for (auto itr : gatedimplant_counter_map){
+    std::cout << "Number of " << itr->first << " implants: " << gatedimplant_counter_map->second << std::endl;
+  }
+  
+
+  // *************************************************************************************
+  // ****************************** WRITE TREES ******************************************
+  // *************************************************************************************
   
   implant_tree->Write();
-  gatedimplant_82nb_tree->Write();
-  gatedimplant_84nb_tree->Write();
-  gatedimplant_84mo_tree->Write();
-  gatedimplant_85mo_tree->Write();
   decay_tree->Write();
   germanium_tree->Write();
+  
+  // Loop over trees and Write
+  for (auto itr : gatedimplant_trees_map){
+    
+    // Extract tree and write
+    itr->second->Write();
+  }
+
+  // *************************************************************************************
+  // ****************************** CLEANUP **********************************************
+  // *************************************************************************************
 
   // Close the file
   file->Close();
