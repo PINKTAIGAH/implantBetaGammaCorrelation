@@ -11,7 +11,6 @@
 
 namespace constants{
 
-  const int DSSD = 1;
   const std::string BROKEN_STRIPS_INFILE = "/lustre/gamma/jeroen/S100/analysis/betaion/AIDA_strips.txt";
 
   const int TOTAL_GERMANIUM_DETECTORS = 15; // Number of germanium detectors 
@@ -77,7 +76,7 @@ struct germanium_data{
 // *************************************************************************************
 
 
-std::tuple< std::vector<int>, std::tuple<int> > loadBrokenStrips(){
+std::tuple< std::vector<int>, std::vector<int> > loadBrokenStrips(){
   // Read in broken strips for both upstream and downstream DSSSD which are to be skipped 
   
   std::ifstream aida_strips_file(constants::BROKEN_STRIPS_INFILE); // Open file
@@ -96,7 +95,7 @@ std::tuple< std::vector<int>, std::tuple<int> > loadBrokenStrips(){
     // Skip comments
     if(line[0] == '#') continue;
 
-    std::istringstream iss(line);T
+    std::istringstream iss(line);
     iss >> dssd_number >> xy >> strip_number >> threshold;
 
     // If the threshold is -1, add the strip to the list of strips to skip
@@ -173,38 +172,31 @@ void makeAnatrees(const char* input, const char* output) {
     return;
   }
 
-  // Open the output file
-  TFile* outputFile = new TFile(output, "RECREATE");
-  if (!outputFile) {
-      std::cerr << "Error: Could not create output file " << std::endl;
-      return;
-  }
-
   // *************************************************************************************
   // ****************************** CREATE GATE MULTIMAPS ********************************
   // *************************************************************************************
 
   // Create a multimap with TCUTG objects of each gate and a implant event counter for each gate defined in the script
-  std::map< std::string, std::tuple<TCutG*, TCutG*> > gatedimplant_cuts_map = {};
+  std::multimap< std::string, std::tuple<TCutG*, TCutG*> > gatedimplant_cuts_map = {};
 
   // Loop over gate map
   for ( auto itr : constants::IMPLANT_GATES_INFILE_MAP){
     
     // Open gate file
-    TFile* gate_file = new TFile(itr->second);
+    TFile* gate_file = new TFile(itr.second.c_str());
     if (!gate_file){
       std::cerr << "Error: Could not open gate file " << std::endl;
       std::exit(1);
     }
 
-    std::string gate_name = itr->first; // Get gate name
+    std::string gate_name = itr.first; // Get gate name
 
     // Extract TCutG objects from gates
     TCutG *zaoq_cut = (TCutG*)gate_file->Get("cut_Z_AoQ");
     TCutG *zz2_cut = (TCutG*)gate_file->Get("cut_Z_Z2");
     
     // Add gate information to multimap
-    gatedimplant_cuts_map.emplace( gate_name, std::make_tuple(gate_name, zaoq_cut, zz2_cut) );   
+    gatedimplant_cuts_map.emplace( gate_name, std::make_tuple(zaoq_cut, zz2_cut) );   
   }
 
   // Create a map which will hold the counters for each gated implant species
@@ -213,7 +205,7 @@ void makeAnatrees(const char* input, const char* output) {
   // Loop over map and fill with zerod counter for each gate
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP){
 
-    std::string gate_name = itr->first; // Get gate name
+    std::string gate_name = itr.first; // Get gate name
 
     // Fill map
     gatedimplant_counter_map.emplace( gate_name, 0);
@@ -275,6 +267,13 @@ void makeAnatrees(const char* input, const char* output) {
   // *************************************************************************************
   // ****************************** DEFINE OUTPUT TREES **********************************
   // *************************************************************************************
+
+  // Open the output file
+  TFile* outputFile = new TFile(output, "RECREATE");
+  if (!outputFile) {
+      std::cerr << "Error: Could not create output file " << std::endl;
+      return;
+  }
   
   // Create implant tree and branches for anatree
   TTree* implant_tree = new TTree("aida_implant_tree", "New AIDA Analysis Tree");
@@ -293,16 +292,16 @@ void makeAnatrees(const char* input, const char* output) {
   /*bplast_tree->Branch("bplast", &bplast_data, "time/l:id/S:slow_tot/D:sp/I:bp/I");*/
 
   // Define a map to contain all the gated implant trees
-  std::map<std::string, TTree*> gatedimplant_trees_map = {}
+  std::map<std::string, TTree*> gatedimplant_trees_map = {};
 
   // Loop over gate and make trees for each gated implant isotope
   for ( auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
     
     // Get the fist element of the tuple containing the name
-    std::string implant_gate_name = itr->first;
+    std::string implant_gate_name = itr.first;
     
     // Create name strings for tree and branch
-    std::string tree_name = "aida_gatedimplant" + implant_gate_name + "_tree";
+    std::string tree_name = "aida_gatedimplant_" + implant_gate_name + "_tree";
     std::string branch_name = "gatedimplant_" + implant_gate_name;
 
     // Create tree and define branch structure
@@ -445,15 +444,15 @@ void makeAnatrees(const char* input, const char* output) {
     }
 
     // Define a map to hold a set of  subevents which contained FRS and gated implant coincidence
-    std::map<std::set<int>> gatedimplant_filledtree_map = {};
+    std::map<std::string, std::set<int>> gatedimplant_filledtree_map = {};
     
     // Loop over all gatedimplant isotopes and define an empty set
     for ( auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
       // Get the fist element of the tuple containing the name
-      std::string implant_gate_name = itr->first;
+      std::string implant_gate_name = itr.first;
 
       // Fill map with empty set
-      gatedimplant_filledtree_map.emplace(implant_gate_name, std::set<int>())
+      gatedimplant_filledtree_map.emplace(implant_gate_name, std::set<int>());
     }
     
     // *************************************************************************************
@@ -483,8 +482,8 @@ void makeAnatrees(const char* input, const char* output) {
           for (auto gimp_itr : gatedimplant_cuts_map){
             
             // Unpack entries inside map 
-            std::string gimp_key = gimp_itr->first;
-            auto [zaoq_cut, zz2_cut] = gimp_itr->second;
+            std::string gimp_key = gimp_itr.first;
+            auto [zaoq_cut, zz2_cut] = gimp_itr.second;
             
             if( zaoq_cut->IsInside(aoq, z) && zz2_cut->IsInside(z, z2) ){
               for (int j = 0; j < aidaimphits; j++){
@@ -596,7 +595,7 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Loop over counter map and print statistics
   for (auto itr : gatedimplant_counter_map){
-    std::cout << "Number of " << itr->first << " implants: " << gatedimplant_counter_map->second << std::endl;
+    std::cout << "Number of " << itr.first << " implants: " << itr.second << std::endl;
   }
   
 
@@ -612,7 +611,7 @@ void makeAnatrees(const char* input, const char* output) {
   for (auto itr : gatedimplant_trees_map){
     
     // Extract tree and write
-    itr->second->Write();
+    itr.second->Write();
   }
 
   // *************************************************************************************

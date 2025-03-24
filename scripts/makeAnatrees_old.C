@@ -9,10 +9,10 @@ namespace constants{
   const bool DRAW_HISTS = false;
   const bool MAKE_ANATREES = true;
 
-  const int DSSD = 3;
+  const int DSSD = 1;
 }
 
-void makeAnatrees(const char* input, const char* output) {
+void makeAnatrees_old(const char* input, const char* output) {
     // Open the file
   TFile* file = TFile::Open(input);
   if (!file) {
