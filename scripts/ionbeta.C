@@ -277,7 +277,7 @@ void ionbeta(const char* input, const char* output){
       last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
 
       // Set gated implant position
-      gatedimplant_pos_x = x;
+    gatedimplant_pos_x = x;
       gatedimplant_pos_y = y;
 
       h2_aida_implant_xy->Fill(x,y); // Fill Histogram with gated implant position
