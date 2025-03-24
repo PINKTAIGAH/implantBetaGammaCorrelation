@@ -5,148 +5,15 @@
 #include <TTreeReaderArray.h>
 #include <TTreeReaderValue.h>
 
-// *************************************************************************************
-// ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
-// *************************************************************************************
-
 namespace constants{
   const bool DRAW_HISTS = false;
   const bool MAKE_ANATREES = true;
 
   const int DSSD = 3;
-  const std::string BROKEN_STRIPS_INFILE = "/lustre/gamma/jeroen/S100/analysis/betaion/AIDA_strips.txt";
 }
-
-// *************************************************************************************
-// ****************************** DEFINE CUSTOM STRUCTURES ***************************** 
-// *************************************************************************************
-
-// Define the data structures for branches
-struct implant_data{
-  uint64_t time;
-  int stopped;
-  int dssd;
-  double x;
-  double y;
-  double energy;
-  double energy_x;
-  double energy_y;
-  int sp;
-  /*int bp;*/
-}aida_implant_data;
-  
-struct decay_data{
-  uint64_t time;
-  double x;
-  double y;
-  double energy;
-  double energy_x;
-  double energy_y;
-  int dssd;
-  int sp;
-  //int bp;
-}aida_decay_data;
-
-struct bplast_data{
-  uint64_t time;
-  short id;
-  double slow_tot;
-  int sp;
-  /*int bp;*/
-}bplast_data;
-  
-struct germanium_data{
-  uint64_t time;
-  double energy;
-  int sp;
-  /*int bp;*/
-}germanium_data;
-
-
-// *************************************************************************************
-// ****************************** DEFINE FUNCTIONS *************************************
-// *************************************************************************************
-
-
-std::tuple< std::vector<int>, std::tuple<int> > loadBrokenStrips(){
-  // Read in broken strips for both upstream and downstream DSSSD which are to be skipped 
-  
-  std::ifstream aida_strips_file(constants::BROKEN_STRIPS_INFILE); // Open file
-
-  // Declare function variables
-  std::vector<int> broken_xstrips;
-  std::vector<int> broken_ystrips;
-  int dssd_number;
-  std::string xy;
-  int strip_number;
-  int threshold;
-
-  std::string line;
-
-  while(std::getline(aida_strips_file, line)){
-    // Skip comments
-    if(line[0] == '#') continue;
-
-    std::istringstream iss(line);
-    iss >> dssd_number >> xy >> strip_number >> threshold;
-
-    // If the threshold is -1, add the strip to the list of strips to skip
-    if ( threshold == -1 ){
-      if ( xy == "X" ){
-        strip_number = strip_number - 1;
-        broken_xstrips.push_back(strip_number);
-      } 
-      else if ( xy == "Y" ){
-        strip_number = strip_number - 1;
-        broken_ystrips.push_back(strip_number);
-      }
-    }
-  }
-
-  // Print out broken strips 
-  for( auto x : broken_xstrips ){
-    std::cout << "Broken X strip: " << x << std::endl;
-  }
-  
-  for(auto y : broken_ystrips){
-    std::cout << "Broken Y strip: " << y << std::endl;
-  }
-
-  return std::make_tuple(broken_xstrips, broken_ystrips);
-}
-
-
-bool isBrokenStrip(std::vector<double> broken_strip_vector, double event_strip){
-  // Function which will loop over vector containing broken strips and check 
-  // if current event occured in a broken strip
-
-  bool isBroken = false; // Flag telling if event is from broken strip
-
-  // Loop over vector if not empty
-  if (!broken_strip_vector.empty()){
-    // Loop for each noisy strip
-    for (auto & broken_strip : broken_strip_vector){
-      // If event strip corresponds to a broken strip, change flag and break 
-      if ( event_strip == broken_strip ){ 
-        isBroken = true;
-        break; 
-      }
-
-    }
-
-  }
-
-  return isBroken;
-}
-
-// *************************************************************************************
-// ****************************** START MACRO ******************************************
-// *************************************************************************************
-
 
 void makeAnatrees(const char* input, const char* output) {
-  
-  // Open the file
+    // Open the file
   TFile* file = TFile::Open(input);
   if (!file) {
       std::cerr << "Error: Could not open file " << std::endl;
@@ -220,6 +87,46 @@ void makeAnatrees(const char* input, const char* output) {
   int implanted_84Mo = 0;
   int implanted_85Mo = 0;
 
+  // Load broken strips
+
+  // std::ifstream aida_strips_file("/lustre/gamma/jeroen/S100/analysis/betaion/AIDA_strips.txt");
+  
+  // std::vector<int> broken_xstrips;
+  // std::vector<int> broken_ystrips;
+  // int dssd_number;
+  // std::string xy;
+  // int strip_number;
+  // int threshold;
+
+  // std::string line;
+
+  // while(std::getline(aida_strips_file, line))
+  // {
+  //     if(line[0] == '#') continue;
+
+  //     std::istringstream iss(line);
+  //     iss >> dssd_number >> xy >> strip_number >> threshold;
+      
+  //     // If the threshold is -1, add the strip to the list of strips to skip
+  //     if (threshold == -1) {
+  //         if (xy == "X") {
+  //             strip_number = strip_number - 1;
+  //             broken_xstrips.push_back(strip_number);
+  //         } else if (xy == "Y") {
+  //             strip_number = strip_number - 1;
+  //             broken_ystrips.push_back(strip_number);
+  //         }
+  //     }
+  // }
+
+  // // Print out broken strips
+
+  // for(auto x : broken_xstrips) {
+  //     std::cout << "Broken X strip: " << x << std::endl;
+  // }
+  // for(auto y : broken_ystrips) {
+  //     std::cout << "Broken Y strip: " << y << std::endl;
+  // }
 
   TFile *Nb82 = new TFile("/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82Nb.root");
   if (!Nb82) {
@@ -277,6 +184,51 @@ void makeAnatrees(const char* input, const char* output) {
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
 
 
+  // Define the data structures
+  struct implant_data
+  {
+      uint64_t time;
+      int stopped;
+      int dssd;
+      double x;
+      double y;
+      double energy;
+      double energy_x;
+      double energy_y;
+      int sp;
+      // int bp;
+  } aida_implant_data;
+  
+  struct decay_data
+  {
+      uint64_t time;
+      double x;
+      double y;
+      double energy;
+      double energy_x;
+      double energy_y;
+      int dssd;
+      int sp;
+      // int bp;
+  } aida_decay_data;
+
+  struct bplast_data
+  {
+      uint64_t time;
+      short id;
+      double slow_tot;
+      int sp;
+      // int bp;
+  } bplast_data;
+  
+
+  struct germanium_data
+  {
+      uint64_t time;
+      double energy;
+      int sp;
+      // int bp;
+  } germanium_data;
 
   // Create the branches
   implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I");
@@ -649,4 +601,3 @@ void makeAnatrees(const char* input, const char* output) {
   delete Mo84;
   delete Mo85;
 }
-
