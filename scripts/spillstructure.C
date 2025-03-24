@@ -51,8 +51,8 @@ enum EventType { GATEDIMPLANT, IMPLANT, DECAY }; // Tags for event type
 // *************************************************************************************
 
 // Multimaps to hold events from anatrees
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> gated_implants_map;
-std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> all_implants_map;
+std::multimap<int64_t, std::tuple<double, double, int, int, int, EventType>> gated_implants_map;
+std::multimap<int64_t, std::tuple<double, double, int, int, int, EventType>> all_implants_map;
 std::multimap<int64_t, std::tuple<double, double, int, int, EventType>> good_decays_map;
 
 // *************************************************************************************
@@ -124,7 +124,7 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<double> implant_ex(implant_reader, "implant.ex");
   TTreeReaderValue<double> implant_ey(implant_reader, "implant.ey");
   TTreeReaderValue<Int_t> implant_spill(implant_reader, "implant.sp"); // sp = 1 spill, sp = 2 no spill
-  /*TTreeReaderValue<Int_t> implant_bplast(implant_reader, "implant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
+  TTreeReaderValue<Int_t> implant_bplast(implant_reader, "implant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired
 
   // Define leaves of variables for gated implant tree
   TTreeReaderValue<ULong64_t> gatedimplant_time(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".time") ).c_str());
@@ -135,7 +135,7 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<double> gatedimplant_ex(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ex") ).c_str());
   TTreeReaderValue<double> gatedimplant_ey(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ey") ).c_str());
   TTreeReaderValue<Int_t> gatedimplant_spill(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".sp") ).c_str()); // sp = 1 spill, sp = 2 no spill
-  /*TTreeReaderValue<Int_t> gatedimplant_bplast(gatedimplant_reader, "gatedimplant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
+  TTreeReaderValue<Int_t> gatedimplant_bplast(gatedimplant_reader, "gatedimplant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired
 
   // Define leaves of variables for decay tree
   TTreeReaderValue<ULong64_t> decay_time(decay_reader, "decay.time");
@@ -146,7 +146,6 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<double> decay_ex(decay_reader, "decay.ex");
   TTreeReaderValue<double> decay_ey(decay_reader, "decay.ey");
   TTreeReaderValue<Int_t> decay_spill(decay_reader, "decay.sp"); // sp = 1 spill, sp = 2 no spill
-  /*TTreeReaderValue<Int_t> decay_bplast(decay_reader, "decay.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired*/
 
   // *************************************************************************************
   // ****************************** DEFINE HISTOGRAMS ************************************
@@ -170,25 +169,27 @@ void spillstructure(const char* input, const char* output){
 
   // Read gated implant events
   while (gatedimplant_reader.Next()){
-    gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_dssd, IMPLANT));
+    if( *gatedimplant_dssd==constants::DSSD && *gatedimplant_bplast==0 ){
+      gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_bplast, *gatedimplant_dssd, IMPLANT));
+    }
   }
   std::cout << "Finished filling the gated implant map" << std::endl;
   std::cout << "Number of implant events: " << gated_implants_map.size() << std::endl << std::endl;
 
   // Read implant events
   while (implant_reader.Next()){
-    /*if(*implant_x > 250 && *implant_x < 350 && *implant_y > 40 && *implant_y < 110){*/
-      all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_dssd, IMPLANT));
-    /*}*/
+    if( *implant_dssd==constants::DSSD && *implant_bplast==0 ){
+      all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_bplast, *implant_dssd, IMPLANT));
+    }
   }
   std::cout << "Finished filling the implant map" << std::endl;
   std::cout << "Number of All implant events cut on region: " << all_implants_map.size() << std::endl << std::endl;
 
   // Read decay events
   while (decay_reader.Next()){
-    /*if(*decay_x > 250 && *decay_x < 350 && *decay_y > 40 && *decay_y < 110){*/
-      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill/*, decay_bplast*/, DECAY));
-    /*}*/
+    if( *decay_dssd==constants::DSSD && TMath::Abs(*decay_time_x-*decay_time_y)<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e<151 && *decay_e>3000 ){
+      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill, DECAY));
+    }
   }
   std::cout << "Finished filling the decay map" << std::endl;
   std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
@@ -209,7 +210,7 @@ void spillstructure(const char* input, const char* output){
   for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
     
     // Unpack event variables for current gated implant event
-    auto [x, y, spill, dssd, type] = gimp_evt->second;
+    auto [x, y, spill, bplast, dssd, type] = gimp_evt->second;
 
     // Continue loop only if gated implant occured in DSSSD 1 (AIDA)
     if (type == IMPLANT && dssd == constants::DSSD){
@@ -248,7 +249,7 @@ void spillstructure(const char* input, const char* output){
         if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
 
         // Unpack event variables for current decay event
-        auto [decay_x, decay_y, decay_dssd, decay_spill,/*, decay_bplast*/ decay_type] = decay_evt->second;
+        auto [decay_x, decay_y, decay_dssd, decay_spill, decay_type] = decay_evt->second;
 
         // Skip if not from correct DSSD
         if ( decay_dssd != constants::DSSD) { continue; }

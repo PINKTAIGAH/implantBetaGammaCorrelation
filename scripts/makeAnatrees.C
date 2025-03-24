@@ -40,11 +40,13 @@ struct implant_data{
   double energy_x;
   double energy_y;
   int sp;
-  /*int bp;*/
+  int bp;
 }aida_implant_data;
   
 struct decay_data{
   uint64_t time;
+  uint64_t time_x;
+  uint64_t time_y;
   double x;
   double y;
   double energy;
@@ -52,7 +54,7 @@ struct decay_data{
   double energy_y;
   int dssd;
   int sp;
-  //int bp;
+  int bp;
 }aida_decay_data;
 
 struct bplast_data{
@@ -229,10 +231,10 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Double_t> implant_x(reader, "AidaImplantHits.StripX");
   TTreeReaderArray<Double_t> implant_y(reader, "AidaImplantHits.StripY");
 
-  // // TTreeReaderArray<u_int64_t> bplast_time(reader, "bPlastTwinpeaksCalData.fabsolute_event_time");
-  // // TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
-  // TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
-  // TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
+  /*TTreeReaderArray<u_int64_t> bplast_time(reader, "bPlastTwinpeaksCalData.fabsolute_event_time");*/
+  TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
+  TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
+  TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
 
   TTreeReaderArray<int64_t> decay_time(reader, "AidaDecayHits.Time");
   TTreeReaderArray<Int_t> decay_dssd(reader, "AidaDecayHits.DSSD");
@@ -277,11 +279,11 @@ void makeAnatrees(const char* input, const char* output) {
   
   // Create implant tree and branches for anatree
   TTree* implant_tree = new TTree("aida_implant_tree", "New AIDA Analysis Tree");
-  implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I");
+  implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
 
   // Create decay tree and branches for anatree
   TTree* decay_tree = new TTree("aida_decay_tree", "New AIDA Analysis Tree");
-  decay_tree->Branch("decay", &aida_decay_data, "time/l:x/D:y/D:e/D:ex/D:ey/D:dssd/I:sp/I");
+  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/D:dssd/I:sp/I:bp/I");
 
   // Create germanium tree and branches for anatree
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
@@ -306,7 +308,7 @@ void makeAnatrees(const char* input, const char* output) {
 
     // Create tree and define branch structure
     TTree* gatedimplant_tree = new TTree(tree_name.c_str(), "New AIDA Analysis Tree");
-    gatedimplant_tree->Branch(branch_name.c_str(), &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I");
+    gatedimplant_tree->Branch(branch_name.c_str(), &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
 
     // Add tree to set
     gatedimplant_trees_map.emplace(implant_gate_name, gatedimplant_tree);
@@ -359,18 +361,17 @@ void makeAnatrees(const char* input, const char* output) {
     int germaniumhits = germanium_time.GetSize();
     int aidadecayhits = decay_time.GetSize();
     int aidaimphits = implant_time.GetSize();
+    int bplasthits = bplast_id.GetSize();
     /*int frshits = frs_time.GetSize();*/
-    /*int bplasthits = bplast_id.GetSize();*/
 
     int mult_x = decay_x.GetSize();
     int mult_y = decay_y.GetSize();
 
       
     int spflag = 0;
-    int decflag = 0;
-    /*int bpflag = 0;*/
-    /*int bp1flag = 0;*/
-    /*int bp2flag = 0;*/
+    int bpflag = 0;
+    int bp1flag = 0;
+    int bp2flag = 0;
 
     /*cout << "# of FRS hits:  " << frshits << endl;*/
     /*cout << "# of implant hits:  " << aidaimphits << endl;*/
@@ -387,14 +388,14 @@ void makeAnatrees(const char* input, const char* output) {
     // ****************************** LOOP OVER BPLAST  ************************************
     // *************************************************************************************
       
-    /*for (int j = 0; j < bplasthits; j++) {*/
-    /*  if(bplast_id[j] < 64) bp1flag = 1;*/
-    /*  if(bplast_id[j] > 63 && bplast_id[j] < 128) bp2flag = 1;*/
-    /*}*/
+    for (int j = 0; j < bplasthits; j++) {
+      if(bplast_id[j] < 64) bp1flag = 1;
+      if(bplast_id[j] > 63 && bplast_id[j] < 128) bp2flag = 1;
+    }
   
-    /*if (bp1flag == 1 && bp2flag == 0) bpflag = 1;*/
-    /*if (bp1flag == 0 && bp2flag == 1) bpflag = 2;*/
-    /*if (bp1flag == 1 && bp2flag == 1) bpflag = 3;*/
+    if (bp1flag == 1 && bp2flag == 0) bpflag = 1;
+    if (bp1flag == 0 && bp2flag == 1) bpflag = 2;
+    if (bp1flag == 1 && bp2flag == 1) bpflag = 3;
           
     /*cout << bp1flag << "  " << bp2flag << "  " << bpflag << endl;*/
     
@@ -436,7 +437,7 @@ void makeAnatrees(const char* input, const char* output) {
         aida_implant_data.energy_x = implant_energy_x[j];
         aida_implant_data.energy_y = implant_energy_y[j];
         aida_implant_data.sp = spflag;
-        /*aida_implant_data.bp = bpflag;*/
+        aida_implant_data.bp = bpflag;
 
         // Fill implant tree with subevent
         implant_tree->Fill();
@@ -497,6 +498,7 @@ void makeAnatrees(const char* input, const char* output) {
                   aida_implant_data.energy_x = implant_energy_x[j];
                   aida_implant_data.energy_y = implant_energy_y[j];
                   aida_implant_data.sp = spflag;
+                  aida_implant_data.bp = bpflag;
 
                   gatedimplant_trees_map[gimp_key]->Fill();
 
@@ -530,18 +532,23 @@ void makeAnatrees(const char* input, const char* output) {
 
       for (int i = 0; i < aidadecayhits; i++) {
 
-        if (aidadecay_filledtree.count(i) == 0) {
+        if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {
 
-          aida_decay_data.time = decay_time[i];
-          aida_decay_data.x = decay_x[i];
-          aida_decay_data.y = decay_y[i];
-          aida_decay_data.energy = decay_energy[i];
-          aida_decay_data.energy_x = decay_energy_x[i];
-          aida_decay_data.energy_y = decay_energy_y[i];
-          aida_decay_data.dssd = decay_dssd[i];
-          aida_decay_data.sp = spflag;
-          /*aida_decay_data.bp = bpflag;*/
-          decay_tree->Fill();
+          if (aidadecay_filledtree.count(i) == 0) {
+
+            aida_decay_data.time = decay_time[i];
+            aida_decay_data.time_x = decay_time_x[i];
+            aida_decay_data.time_y = decay_time_y[i];
+            aida_decay_data.x = decay_x[i];
+            aida_decay_data.y = decay_y[i];
+            aida_decay_data.energy = decay_energy[i];
+            aida_decay_data.energy_x = decay_energy_x[i];
+            aida_decay_data.energy_y = decay_energy_y[i];
+            aida_decay_data.dssd = decay_dssd[i];
+            aida_decay_data.sp = spflag;
+            aida_decay_data.bp = bpflag;
+            decay_tree->Fill();
+          }
         }
 
         aidadecay_filledtree.insert(i);
