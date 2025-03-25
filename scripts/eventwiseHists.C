@@ -24,7 +24,7 @@ namespace constants{
     {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root"}
   };
 
-  const int DSSD = 1;
+  const int DSSD = 3;
 
 }
 
@@ -114,13 +114,13 @@ bool isBrokenStrip(std::vector<double> broken_strip_vector, double event_strip){
 // *************************************************************************************
 
 
-void eventWiseHists(const char* input, const char* output) {
+void eventwiseHists(const char* input, const char* output) {
 
   // *************************************************************************************
   // ****************************** OPEN & CREATE FILES **********************************
   // *************************************************************************************
   
-  std::cout << "Opening files ..." << std::endl;
+  std::cout << std::endl << "Opening files ..." << std::endl;
   
   // Open the file
   TFile* file = TFile::Open(input);
@@ -200,7 +200,7 @@ void eventWiseHists(const char* input, const char* output) {
   TTreeReaderArray<Int_t> implant_adc_strip(reader, "AidaImplantCalAdcData.strip");
   TTreeReaderArray<Int_t> implant_adc_fee(reader, "AidaImplantCalAdcData.fee");
   TTreeReaderArray<Double_t> implant_adc_energy(reader, "AidaImplantCalAdcData.energy");
-  TTreeReaderArray<uint64_t> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
+  TTreeReaderArray<uint64_t> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
 
   TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
@@ -234,11 +234,12 @@ void eventWiseHists(const char* input, const char* output) {
   TTreeReaderArray<FrsMultiHitItem> FrsMultiItem(reader, "FrsMultiHitData");
   TTreeReaderArray<Float_t> frs_x4(reader, "FrsHitData.fID_x4");
   TTreeReaderArray<Float_t> frs_x2(reader, "FrsHitData.fID_x2");
-  TTreeReaderArray<Float_t> frs_z(reader, "FrsHitData.fID_z");
-  TTreeReaderArray<Float_t> frs_z2(reader, "FrsHitData.fID_z2");
-  TTreeReaderArray<Float_t> frs_aoq(reader, "FrsHitData.fID_AoQ_corr");
-  TTreeReaderArray<uint64_t> frs_time(reader, "FrsHitData.fwr_t");
-  TTreeReaderArray<Float_t> frs_dedeg(reader, "FrsHitData.fID_dEdeg");
+  TTreeReaderArray<Float_t> frs_z(reader, "FrsHitData.fID_z41");
+  TTreeReaderArray<Float_t> frs_z2(reader, "FrsHitData.fID_z42");
+  TTreeReaderArray<Float_t> frs_aoq(reader, "FrsHitData.fID_AoQ_corr_s2s4");
+  TTreeReaderArray<long long> frs_time(reader, "FrsHitData.fwr_t");
+  TTreeReaderArray<Float_t> frs_dedeg(reader, "FrsHitData.fID_dEdeg_z41");
+
 
   // *************************************************************************************
   // ****************************** DEFINE OUTPUT FILE **********************************
@@ -259,7 +260,7 @@ void eventWiseHists(const char* input, const char* output) {
   ULong_t wr_start = 0;
   ULong_t wr_end = 0;
 
-  std::cout << "Finding file white rabbit times ..." << std::cout;
+  std::cout << "Finding file white rabbit times ..." << std::endl;
 
   // Loop over all the entries in the new tree
   while (reader.Next()){
@@ -269,6 +270,8 @@ void eventWiseHists(const char* input, const char* output) {
     if (frshits>0 && wr_start==0 ){ wr_start = frs_time[0]; }
     if ( frshits>0 ){ wr_end = frs_time[0]; }
   }
+
+  reader.Restart(); // Reset reader for next loop
 
   // Find white rabbit time difference of experiments
   ULong_t wr_dt = wr_end - wr_start;
@@ -284,8 +287,8 @@ void eventWiseHists(const char* input, const char* output) {
   // Define binning width for specific plots using file runtime
   int data_item_binwidth = wr_dt / histogram_resolutions::DATA_ITEM_RATES;
   int event_binwidth = wr_dt / histogram_resolutions::EVENT_RATES;
-  int lec_energy_binwidth = 3000 / histogram_resolutions::LEC_ENERGY; 
-  int hec_energy_binwidth = 7000 / histogram_resolutions::HEC_ENERGY; 
+  /*int lec_energy_binwidth = 3000 / histogram_resolutions::LEC_ENERGY; */
+  /*int hec_energy_binwidth = 7000 / histogram_resolutions::HEC_ENERGY; */
   
   // Initialise histogram object for 16 histograms for each FEEs of LEC and HEC data items 
   std::map<int, TH1F*> h1_aida_lec_dataitem_all_map = {};
@@ -308,12 +311,12 @@ void eventWiseHists(const char* input, const char* output) {
     TH1F* h1_aida_hec_dataitem_highbound = new TH1F( Form("aida_hec_dataitem_highbound_fee%d", fee), Form("AIDA FEE %d HEC Dataitem Rate (E #geq 1000 NeV)", fee), data_item_binwidth, wr_start, wr_end); 
 
     // Fill Maps
-    h1_aida_lec_dataitem_all_map.emplace(h1_aida_lec_dataitem_all);
-    h1_aida_lec_dataitem_lowbound_map.emplace(h1_aida_lec_dataitem_lowbound);
-    h1_aida_lec_dataitem_highbound_map.emplace(h1_aida_lec_dataitem_highbound);
-    h1_aida_hec_dataitem_all_map.emplace(h1_aida_hec_dataitem_all);
-    h1_aida_hec_dataitem_lowbound_map.emplace(h1_aida_hec_dataitem_lowbound);
-    h1_aida_hec_dataitem_highbound_map.emplace(h1_aida_hec_dataitem_highbound);
+    h1_aida_lec_dataitem_all_map.emplace(fee, h1_aida_lec_dataitem_all);
+    h1_aida_lec_dataitem_lowbound_map.emplace(fee, h1_aida_lec_dataitem_lowbound);
+    h1_aida_lec_dataitem_highbound_map.emplace(fee, h1_aida_lec_dataitem_highbound);
+    h1_aida_hec_dataitem_all_map.emplace(fee, h1_aida_hec_dataitem_all);
+    h1_aida_hec_dataitem_lowbound_map.emplace(fee, h1_aida_hec_dataitem_lowbound);
+    h1_aida_hec_dataitem_highbound_map.emplace(fee, h1_aida_hec_dataitem_highbound);
   }
 
   // Make LEC and HEC event and multiplicity histograms
@@ -335,15 +338,15 @@ void eventWiseHists(const char* input, const char* output) {
     std::string histogram_title = "AIDA " + gatedimplant_name + " Implant Event - Bplast Channel Multiplicity (Upstream + Downstream)";
 
     // Make histogram and fill map
-    TH1F* h1_gatedimplant_bplast_multiplicity = new TH1F(histogram_name.c_str(), histogram_title.c_str(), 140, 0, 140);
+    TH1F* h1_aida_gatedimplant_bplast_multiplicity = new TH1F(histogram_name.c_str(), histogram_title.c_str(), 140, 0, 140);
     h1_aida_gatedimplant_bplast_multiplicity_map.emplace(gatedimplant_name, h1_aida_gatedimplant_bplast_multiplicity);
   }
 
   // FRS histograms
-  TH2F* h2_frs_z_z2_hist = new TH2F("frs_z_z2_hist", "FRS Z vs Z2", 1000, 58, 68, 1000, 58, 68);
-  TH2F* h2_frs_z_aoq_hist = new TH2F("frs_z_aoq_hist", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
-  TH2F* h2_frs_aoq_x4_hist = new TH2F("frs_aoq_x4_hist", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);
-  TH2F* h2_frs_dedeg_z_hist = new TH2F("frs_dedeg_z_hist", "FRS dEdeg vs Z", 1000, 40, 50, 1000, 58, 68);
+  TH2F* h2_frs_z_z2 = new TH2F("frs_z_z2", "FRS Z vs Z2", 1000, 58, 68, 1000, 58, 68);
+  TH2F* h2_frs_z_aoq = new TH2F("frs_z_aoq", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
+  TH2F* h2_frs_aoq_x4 = new TH2F("frs_aoq_x4", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);
+  TH2F* h2_frs_dedeg_z = new TH2F("frs_dedeg_z", "FRS dEdeg vs Z", 1000, 40, 50, 1000, 58, 68);
 
   // *************************************************************************************
   // ****************************** LOOP OVER ALL EVENTS *********************************
@@ -390,6 +393,25 @@ void eventWiseHists(const char* input, const char* output) {
       
 
     // *************************************************************************************
+    // ****************************** LOOP OVER FRS  ************************************
+    // *************************************************************************************
+
+    if(frshits>0){
+
+      // Loop over FRS hits
+      for(int j=0; j<frshits; j++){
+        
+        h2_frs_z_z2->Fill(frs_z[j], frs_z2[j]);
+        h2_frs_z_aoq->Fill(frs_z[j], frs_aoq[j]);
+        h2_frs_aoq_x4->Fill(frs_aoq[j], frs_x4[j]);
+        h2_frs_dedeg_z->Fill(frs_z[j],frs_dedeg[j]);
+
+      } // End of FRS loop
+
+    }
+
+
+    // *************************************************************************************
     // ****************************** LOOP OVER BPLAST  ************************************
     // *************************************************************************************
       
@@ -399,7 +421,7 @@ void eventWiseHists(const char* input, const char* output) {
       // If in upstream bplast
       if(bplast_id[j] < 64){
         bp1flag = 1;
-        bplast_upstream_multiplicity++;
+        bplast_upstream_channel_multiplicity++;
       }
 
       // If in downstream bplast 
@@ -421,35 +443,21 @@ void eventWiseHists(const char* input, const char* output) {
     // ****************************** LOOP OVER AIDA IMPLANTS  *****************************
     // *************************************************************************************
 
-    // Initialise flag for stopped implant
-    int stopped = 0;
-
     if(aidaimphits > 0){
+
       for (int j = 0; j < aidaimphits; j++) {
+        
+        // Check if subevent is in the correct DSSD
+        if(implant_dssd[j] == constants::DSSD){
 
-        // Determine if implant subevent has stopped in specific DSSSD
-        /*if (implant_dssd[j] == constants::DSSD && implant_stopped[j] == true){*/
-        /*  stopped = 1;*/
-        /*} */
-        /*else {*/
-        /*  stopped = 2;*/
-        /*}*/
-              
-        // Fill up implant datastruct
-        aida_implant_data.time = implant_time[j];
-        aida_implant_data.stopped = stopped;
-        aida_implant_data.dssd = implant_dssd[j];
-        aida_implant_data.x = implant_x[j];
-        aida_implant_data.y = implant_y[j];
-        aida_implant_data.energy = implant_energy[j];
-        aida_implant_data.energy_x = implant_energy_x[j];
-        aida_implant_data.energy_y = implant_energy_y[j];
-        aida_implant_data.sp = spflag;
-        aida_implant_data.bp = bpflag;
+          // Fill bplast channel multiplicities   
+          h1_aida_implant_bplast_multiplicity->Fill(bplast_upstream_channel_multiplicity); 
+          h1_aida_implant_bplast_multiplicity->Fill(bplast_downstream_channel_multiplicity + 70); 
+      
+        }
 
-        // Fill implant tree with subevent
-        implant_tree->Fill();
-      }
+      } // End of implant loop
+    
     }
 
 
@@ -496,23 +504,19 @@ void eventWiseHists(const char* input, const char* output) {
             std::string gimp_key = gimp_itr.first;
             auto [zaoq_cut, zz2_cut] = gimp_itr.second;
             
+            // Check if inside gate
             if( zaoq_cut->IsInside(aoq, z) && zz2_cut->IsInside(z, z2) ){
               for (int j = 0; j < aidaimphits; j++){
 
-                if( gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
+                // Check if correct DSSD and if same subevent hasnt been filled
+                if( implant_dssd[j] == constants::DSSD && gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
                    
-                  aida_implant_data.time = implant_time[j];
-                  aida_implant_data.x = implant_x[j];
-                  aida_implant_data.y = implant_y[j];
-                  aida_implant_data.energy = implant_energy[j];
-                  aida_implant_data.energy_x = implant_energy_x[j];
-                  aida_implant_data.energy_y = implant_energy_y[j];
-                  aida_implant_data.sp = spflag;
-                  aida_implant_data.bp = bpflag;
+                  // Fill bplast channel multiplicity for each gatedimplant isotope     
+                  h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_upstream_channel_multiplicity); // Upstream
+                  h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_downstream_channel_multiplicity + 70); // Downstream
 
-                  gatedimplant_trees_map[gimp_key]->Fill();
+                  gatedimplant_counter_map[gimp_key]++; // Increase counter
 
-                  gatedimplant_counter_map[gimp_key]++;
                 }
 
                 gatedimplant_filledtree_map[gimp_key].insert(j);
@@ -549,7 +553,7 @@ void eventWiseHists(const char* input, const char* output) {
           // Fill Data item rate histograms
           if (implant_adc_energy[j] >= 100 && implant_adc_energy[j] <= 1000){ h1_aida_hec_dataitem_lowbound_map[implant_adc_fee[j]]->Fill(implant_adc_time[j]); }
           if (implant_adc_energy[j] > 1000){ h1_aida_hec_dataitem_highbound_map[implant_adc_fee[j]]->Fill(implant_adc_time[j]); }
-          h1_aida_hec_dataitem_all_map[implant_adc_dee[j]]->Fill(implant_adc_time[j]);
+          h1_aida_hec_dataitem_all_map[implant_adc_fee[j]]->Fill(implant_adc_time[j]);
         }
 
       } // End of HEC data items loop
@@ -564,38 +568,26 @@ void eventWiseHists(const char* input, const char* output) {
     // ****************************** LOOP OVER DECAY EVENTS *******************************
     // *************************************************************************************
 
-    // Empty set for each subevents
-    std::set<int> aidadecay_filledtree{};
-
-    // Loop over decay subevents
-    if(aidadecayhits == 1){
-
-      for (int i = 0; i < aidadecayhits; i++) {
-
-        if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {
-
-          if (aidadecay_filledtree.count(i) == 0) {
-
-            aida_decay_data.time = decay_time[i];
-            aida_decay_data.time_x = decay_time_x[i];
-            aida_decay_data.time_y = decay_time_y[i];
-            aida_decay_data.x = decay_x[i];
-            aida_decay_data.y = decay_y[i];
-            aida_decay_data.energy = decay_energy[i];
-            aida_decay_data.energy_x = decay_energy_x[i];
-            aida_decay_data.energy_y = decay_energy_y[i];
-            aida_decay_data.dssd = decay_dssd[i];
-            aida_decay_data.sp = spflag;
-            aida_decay_data.bp = bpflag;
-            decay_tree->Fill();
-          }
-        }
-
-        aidadecay_filledtree.insert(i);
-
-      } // End of decay loop
-
-    }
+    /*// Empty set for each subevents*/
+    /*std::set<int> aidadecay_filledtree{};*/
+    /**/
+    /*// Loop over decay subevents*/
+    /*if(aidadecayhits == 1){*/
+    /**/
+    /*  for (int i = 0; i < aidadecayhits; i++) {*/
+    /**/
+    /*    if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {*/
+    /**/
+    /*      if (aidadecay_filledtree.count(i) == 0) {*/
+    /**/
+    /*      }*/
+    /*    }*/
+    /**/
+    /*    aidadecay_filledtree.insert(i);*/
+    /**/
+    /*  } // End of decay loop*/
+    /**/
+    /*}*/
 
 
     // *************************************************************************************
@@ -617,7 +609,7 @@ void eventWiseHists(const char* input, const char* output) {
           // Fill Data item rate histograms
           if (decay_adc_energy[j] >= 150 && decay_adc_energy[j] <= 1500){ h1_aida_lec_dataitem_lowbound_map[decay_adc_fee[j]]->Fill(decay_adc_time[j]); }
           if (decay_adc_energy[j] > 1500){ h1_aida_lec_dataitem_highbound_map[decay_adc_fee[j]]->Fill(decay_adc_time[j]); }
-          h1_aida_lec_dataitem_all_map[decay_adc_dee[j]]->Fill(decay_adc_time[j]);
+          h1_aida_lec_dataitem_all_map[decay_adc_fee[j]]->Fill(decay_adc_time[j]);
         }
 
       } // End of LEC data items loop
@@ -633,29 +625,29 @@ void eventWiseHists(const char* input, const char* output) {
     // *************************************************************************************
 
     
-    std::set<int> germanium_filledtree{};
+    /*std::set<int> germanium_filledtree{};*/
+    /**/
+    /*// Loop over decay subevents*/
+    /*for (int j = 0; j < germaniumhits; j++){*/
+    /**/
+    /*  if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){*/
+    /**/
+    /*    if ( germanium_filledtree.count(j) == 0 ){*/
+    /**/
+    /*    }*/
+    /**/
+    /*  germanium_filledtree.insert(j);*/
+    /**/
+    /*  }*/
+    /**/
+    /*}*/
 
-    // Loop over decay subevents
-    for (int j = 0; j < germaniumhits; j++){
 
-      if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
-
-        if ( germanium_filledtree.count(j) == 0 ){
-
-          germanium_data.time = germanium_abs_ev_time[j];
-          germanium_data.energy = germanium_energy[j];
-          germanium_data.sp = spflag;
-
-          germanium_tree->Fill();
-
-        }
-        
-      germanium_filledtree.insert(j);
-
-      }
-
-    }
+    // *************************************************************************************
+    // ****************************** PRINT OUT LOOP PROGRESS ******************************
+    // *************************************************************************************
     
+
     // Show the progress of the loop
     if (reader.GetCurrentEntry() % 100000 == 0) {
       int progress = (reader.GetCurrentEntry() * 100) / totalEntries;
@@ -678,19 +670,76 @@ void eventWiseHists(const char* input, const char* output) {
   
 
   // *************************************************************************************
-  // ****************************** WRITE TREES ******************************************
+  // ****************************** WRITE HISTOGRAMS *************************************
   // *************************************************************************************
   
-  implant_tree->Write();
-  decay_tree->Write();
-  germanium_tree->Write();
-  
-  // Loop over trees and Write
-  for (auto itr : gatedimplant_trees_map){
-    
-    // Extract tree and write
+  // Write FRS histograms
+  TDirectory* frsDir = outputFile->mkdir("frs");
+  frsDir->cd();
+  h2_frs_z_aoq->Write();
+  h2_frs_z_z2->Write();
+  h2_frs_aoq_x4->Write();
+  h2_frs_dedeg_z->Write();
+  gFile->cd();
+
+  // Write LEC dataitem All histograms
+  TDirectory* lecAllDir = outputFile->mkdir("lec_all");
+  lecAllDir->cd();
+  for (auto itr : h1_aida_lec_dataitem_all_map){
     itr.second->Write();
   }
+  gFile->cd();
+
+  // Write LEC dataitem lowbound histograms
+  TDirectory* lecLowboundDir = outputFile->mkdir("lec_lowbound");
+  lecLowboundDir->cd();
+  for (auto itr : h1_aida_lec_dataitem_lowbound_map){
+    itr.second->Write();
+  }
+  gFile->cd();
+
+  // Write LEC dataitem highbound histograms
+  TDirectory* lecHighboundDir = outputFile->mkdir("lec_highbound");
+  lecHighboundDir->cd();
+  for (auto itr : h1_aida_lec_dataitem_highbound_map){
+    itr.second->Write();
+  }
+  gFile->cd();
+
+  // Write HEC dataitem All histograms
+  TDirectory* hecAllDir = outputFile->mkdir("hec_all");
+  hecAllDir->cd();
+  for (auto itr : h1_aida_hec_dataitem_all_map){
+    itr.second->Write();
+  }
+  gFile->cd();
+
+  // Write HEC dataitem lowbound histograms
+  TDirectory* hecLowboundDir = outputFile->mkdir("hec_lowbound");
+  hecLowboundDir->cd();
+  for (auto itr : h1_aida_hec_dataitem_lowbound_map){
+    itr.second->Write();
+  }
+  gFile->cd();
+
+  // Write HEC dataitem highbound histograms
+  TDirectory* hecHighboundDir = outputFile->mkdir("hec_highbound");
+  hecHighboundDir->cd();
+  for (auto itr : h1_aida_hec_dataitem_highbound_map){
+    itr.second->Write();
+  }
+  gFile->cd();
+  
+  // Write dataitem multiplicities
+  h2_aida_lec_xy_multiplicity->Write();
+  h2_aida_hec_xy_multiplicity->Write();
+
+  // Write implant bplast channel multiplicities
+  h1_aida_implant_bplast_multiplicity->Write();
+  for (auto itr : h1_aida_gatedimplant_bplast_multiplicity_map){
+    itr.second->Write();
+  }
+
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************
