@@ -24,7 +24,7 @@ namespace constants{
     {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root"}
   };
 
-  const int DSSD = 3;
+  const int DSSD = 1;
 
 }
 

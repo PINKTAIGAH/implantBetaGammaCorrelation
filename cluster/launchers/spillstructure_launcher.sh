@@ -34,7 +34,7 @@ done < "$LISTFILE"
 index=$(($SLURM_ARRAY_TASK_ID - 1))
 infile_dir="${size[index]}"
 infile_basename=$(basename ${infile_dir})
-outfile_dir="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/outputs_spillstructure/${infile_basename//anatree.root/spillstructure.root}"
+outfile_dir="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/outputs/spillstructure/${infile_basename//anatree.root/spillstructure.root}"
 
 echo "Input File:  ${infile_dir}"
 echo "Output File:  ${outfile_dir}"
