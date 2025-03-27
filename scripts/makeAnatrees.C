@@ -11,6 +11,8 @@
 
 namespace constants{
 
+  const int DSSSD = 1;
+
   const std::string BROKEN_STRIPS_INFILE = "/lustre/gamma/jeroen/S100/analysis/betaion/AIDA_strips.txt";
 
   const int TOTAL_GERMANIUM_DETECTORS = 15; // Number of germanium detectors 
@@ -203,6 +205,7 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Create a map which will hold the counters for each gated implant species
   std::map<std::string, int> gatedimplant_counter_map = {};
+  std::map<std::string, int> gatedimplant_stopped_counter_map = {};
   
   // Loop over map and fill with zerod counter for each gate
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP){
@@ -211,6 +214,7 @@ void makeAnatrees(const char* input, const char* output) {
 
     // Fill map
     gatedimplant_counter_map.emplace( gate_name, 0);
+    gatedimplant_stopped_counter_map.emplace( gate_name, 0);
   }
 
   // *************************************************************************************
@@ -231,7 +235,13 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Double_t> implant_x(reader, "AidaImplantHits.StripX");
   TTreeReaderArray<Double_t> implant_y(reader, "AidaImplantHits.StripY");
 
-  /*TTreeReaderArray<u_int64_t> bplast_time(reader, "bPlastTwinpeaksCalData.fabsolute_event_time");*/
+  TTreeReaderArray<Int_t> implant_adc_dssd(reader, "AidaImplantCalAdcData.dssd");
+  TTreeReaderArray<Int_t> implant_adc_side(reader, "AidaImplantCalAdcData.side");
+  TTreeReaderArray<Int_t> implant_adc_strip(reader, "AidaImplantCalAdcData.strip");
+  TTreeReaderArray<Int_t> implant_adc_fee(reader, "AidaImplantCalAdcData.fee");
+  TTreeReaderArray<Double_t> implant_adc_energy(reader, "AidaImplantCalAdcData.energy");
+  TTreeReaderArray<uint64_t> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
+
   TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
   TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
@@ -240,9 +250,6 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Int_t> decay_dssd(reader, "AidaDecayHits.DSSD");
   TTreeReaderArray<int64_t> decay_time_x(reader, "AidaDecayHits.TimeX");
   TTreeReaderArray<int64_t> decay_time_y(reader, "AidaDecayHits.TimeY");
-  TTreeReaderArray<Int_t> decay_adc_dssd(reader, "AidaDecayCalAdcData.dssd");
-  TTreeReaderArray<Int_t> decay_adc_side(reader, "AidaDecayCalAdcData.side");
-  TTreeReaderArray<Int_t> decay_adc_strip(reader, "AidaDecayCalAdcData.strip");
   TTreeReaderArray<Double_t> decay_energy(reader, "AidaDecayHits.Energy");
   TTreeReaderArray<Double_t> decay_energy_x(reader, "AidaDecayHits.EnergyX");
   TTreeReaderArray<Double_t> decay_energy_y(reader, "AidaDecayHits.EnergyY");
@@ -251,6 +258,13 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Int_t> decay_cluster_size_x(reader, "AidaDecayHits.ClusterSizeX");
   TTreeReaderArray<Int_t> decay_cluster_size_y(reader, "AidaDecayHits.ClusterSizeY");
 
+  TTreeReaderArray<Int_t> decay_adc_dssd(reader, "AidaDecayCalAdcData.dssd");
+  TTreeReaderArray<Int_t> decay_adc_side(reader, "AidaDecayCalAdcData.side");
+  TTreeReaderArray<Int_t> decay_adc_strip(reader, "AidaDecayCalAdcData.strip");
+  TTreeReaderArray<Int_t> decay_adc_fee(reader, "AidaDecayCalAdcData.fee");
+  TTreeReaderArray<Double_t> decay_adc_energy(reader, "AidaDecayCalAdcData.energy");
+  TTreeReaderArray<uint64_t> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
+
   TTreeReaderArray<uint64_t> germanium_time(reader, "GermaniumCalData.fwr_t");
   TTreeReaderArray<int64_t> germanium_abs_ev_time(reader, "GermaniumCalData.fabsolute_event_time");
   TTreeReaderArray<uint> germanium_det(reader, "GermaniumCalData.fdetector_id");
@@ -258,13 +272,13 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Double_t> germanium_energy(reader, "GermaniumCalData.fchannel_energy");
 
   TTreeReaderArray<FrsMultiHitItem> FrsMultiItem(reader, "FrsMultiHitData");
-  // TTreeReaderArray<Float_t> frs_x4(reader, "FrsHitData.fID_x4");
-  // TTreeReaderArray<Float_t> frs_x2(reader, "FrsHitData.fID_x2");
-  // TTreeReaderArray<Float_t> frs_z(reader, "FrsHitData.fID_z");
-  // TTreeReaderArray<Float_t> frs_z2(reader, "FrsHitData.fID_z2");
-  // TTreeReaderArray<Float_t> frs_aoq(reader, "FrsHitData.fID_AoQ_corr");
-  // TTreeReaderArray<uint64_t> frs_time(reader, "FrsHitData.fwr_t");
-  // TTreeReaderArray<Float_t> frs_dedeg(reader, "FrsHitData.fID_dEdeg");
+  /*TTreeReaderArray<Float_t> frs_x4(reader, "FrsHitData.fID_x4");*/
+  /*TTreeReaderArray<Float_t> frs_x2(reader, "FrsHitData.fID_x2");*/
+  /*TTreeReaderArray<Float_t> frs_z(reader, "FrsHitData.fID_z41");*/
+  /*TTreeReaderArray<Float_t> frs_z2(reader, "FrsHitData.fID_z42");*/
+  /*TTreeReaderArray<Float_t> frs_aoq(reader, "FrsHitData.fID_AoQ_corr_s2s4");*/
+  /*TTreeReaderArray<long long> frs_time(reader, "FrsHitData.fwr_t");*/
+  /*TTreeReaderArray<Float_t> frs_dedeg(reader, "FrsHitData.fID_dEdeg_z41");*/
 
   // *************************************************************************************
   // ****************************** DEFINE OUTPUT TREES **********************************
@@ -392,12 +406,12 @@ void makeAnatrees(const char* input, const char* output) {
       for (int j = 0; j < aidaimphits; j++) {
 
         // Determine if implant subevent has stopped in specific DSSSD
-        /*if (implant_dssd[j] == constants::DSSD && implant_stopped[j] == true){*/
-        /*  stopped = 1;*/
-        /*} */
-        /*else {*/
-        /*  stopped = 2;*/
-        /*}*/
+        if (implant_dssd[j] == constants::DSSSD && bpflag == 0){
+          stopped = 1;
+        } 
+        else {
+          stopped = 2;
+        }
               
         // Fill up implant datastruct
         aida_implant_data.time = implant_time[j];
@@ -461,11 +475,17 @@ void makeAnatrees(const char* input, const char* output) {
             auto [zaoq_cut, zz2_cut] = gimp_itr.second;
             
             if( zaoq_cut->IsInside(aoq, z) && zz2_cut->IsInside(z, z2) ){
+
               for (int j = 0; j < aidaimphits; j++){
+
+                // Determine if implant subevent has stopped in specific DSSSD
+                if (implant_dssd[j] == constants::DSSSD && bpflag == 0){ stopped = 1; } 
+                else { stopped = 2; }
 
                 if( gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
                    
                   aida_implant_data.time = implant_time[j];
+                  aida_implant_data.stopped = stopped;
                   aida_implant_data.x = implant_x[j];
                   aida_implant_data.y = implant_y[j];
                   aida_implant_data.energy = implant_energy[j];
@@ -477,6 +497,8 @@ void makeAnatrees(const char* input, const char* output) {
                   gatedimplant_trees_map[gimp_key]->Fill();
 
                   gatedimplant_counter_map[gimp_key]++;
+                  if ( stopped == 1 ){ gatedimplant_stopped_counter_map[gimp_key]++; }
+
                 }
 
                 gatedimplant_filledtree_map[gimp_key].insert(j);
@@ -582,13 +604,17 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Loop over counter map and print statistics
   for (auto itr : gatedimplant_counter_map){
-    std::cout << "Number of " << itr.first << " implants: " << itr.second << std::endl;
+    std::string key = itr.first;
+    std::cout << "Number of " << key << " implants: " << gatedimplant_counter_map[key] << " ### Stopped: " << gatedimplant_stopped_counter_map[key] << " ### Stopping Efc.: " << gatedimplant_stopped_counter_map[key]*100/gatedimplant_counter_map[key] << " %" << std::endl;
   }
   
+  std::cout << std::endl << std::endl;
 
   // *************************************************************************************
   // ****************************** WRITE TREES ******************************************
   // *************************************************************************************
+
+  std::cout << "Writing trees ..." << std::endl;
   
   implant_tree->Write();
   decay_tree->Write();
@@ -600,6 +626,8 @@ void makeAnatrees(const char* input, const char* output) {
     // Extract tree and write
     itr.second->Write();
   }
+
+  std::cout << "Trees were written succesfully!" << std::endl << std::endl;
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************
