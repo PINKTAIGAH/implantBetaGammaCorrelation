@@ -1,5 +1,5 @@
 #!/bin/bash
-LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list_bb7left.txt"
+LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list.txt"
 NFILES=$(cat ${LISTFILE} | wc -l)
 
 declare -a size

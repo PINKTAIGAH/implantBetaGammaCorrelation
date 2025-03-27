@@ -257,24 +257,24 @@ void eventwiseHists(const char* input, const char* output) {
   // *************************************************************************************
 
   // Initialise time variables
-  ULong_t wr_start = 0;
-  ULong_t wr_end = 0;
+  ULong_t wr_start = 1.7401830e+18;
+  ULong_t wr_end = 1.74022529e+18;
 
-  std::cout << "Finding file white rabbit times ..." << std::endl;
-
-  // Loop over all the entries in the new tree
-  while (reader.Next()){
-
-    int frshits = frs_time.GetSize();
-
-    if (frshits>0 && wr_start==0 ){ wr_start = frs_time[0]; }
-    if ( frshits>0 ){ wr_end = frs_time[0]; }
-  }
-
-  reader.Restart(); // Reset reader for next loop
-
-  // Find white rabbit time difference of experiments
-  ULong_t wr_dt = wr_end - wr_start;
+  /*std::cout << "Finding file white rabbit times ..." << std::endl;*/
+  /**/
+  /*// Loop over all the entries in the new tree*/
+  /*while (reader.Next()){*/
+  /**/
+  /*  int frshits = frs_time.GetSize();*/
+  /**/
+  /*  if (frshits>0 && wr_start==0 ){ wr_start = frs_time[0]; }*/
+  /*  if ( frshits>0 ){ wr_end = frs_time[0]; }*/
+  /*}*/
+  /**/
+  /*reader.Restart(); // Reset reader for next loop*/
+  /**/
+  /*// Find white rabbit time difference of experiments*/
+  /*ULong_t wr_dt = wr_end - wr_start;*/
 
   std::cout << "Found file white rabbit times!" << std::endl;
   std::cout << "WR Start time: " << wr_start << "  #####    WR End time: " << wr_end << std::endl;  

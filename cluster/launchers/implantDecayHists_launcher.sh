@@ -21,7 +21,7 @@ export SIMPATH=/cvmfs/fairsoft.gsi.de/debian11/fairsoft/nov22p1
 export UCESB_DIR=/lustre/gamma/gbrunic/G302/ucesb
 export UCESB_BASE_DIR=/lustre/gamma/gbrunic/G302/ucesb
 
-LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/tree2anatree_file_list.txt"
+LISTFILE="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/filelists/implantDecayHists_file_list.txt"
 NFILES=$(cat ${LISTFILE} | wc -l)
 echo "Analysing" $NFILES " files"
 
@@ -34,10 +34,10 @@ done < "$LISTFILE"
 index=$(($SLURM_ARRAY_TASK_ID - 1))
 infile_dir="${size[index]}"
 infile_basename=$(basename ${infile_dir})
-outfile_dir="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/anatrees/${infile_basename//tree.root/anatree.root}"
+outfile_dir="/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/outputs/implantDecayHists/${infile_basename//anatree.root/implantDecayHists.root}"
 
-echo $infile_dir
-echo $outfile_dir
+echo "Input File:  ${infile_dir}"
+echo "Output File:  ${outfile_dir}"
 
 echo "Running c4! <3"
 root -b -l <<EOF
@@ -51,7 +51,9 @@ gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Data.so");
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4MacroCompiler.so"); 
 gSystem->AddLinkedLibs("-L/lustre/gamma/gbrunic/G302/build/lib -llibc4Base.so"); 
 
-.x /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/scripts/makeAnatrees.C("$infile_dir", "$outfile_dir")
+.x /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/scripts/implantDecayHists.C("$infile_dir", "$outfile_dir")
 EOF
+
+echo "Finalising job."
 
 unset size
