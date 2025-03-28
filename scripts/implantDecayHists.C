@@ -41,7 +41,7 @@ namespace constants{
 namespace experimentInfo{
     const uint64_t WR_EXPERIMENT_START = 1.7401830e+18; // White rabbit start time of files 
     const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,
-    const int64_t SLICES_EVERY = 1; // Size of white rabbit histogram bins 
+    const int64_t SLICES_EVERY = 1e-3; // Size of white rabbit histogram bins 
     const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
     const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
 }
@@ -167,6 +167,8 @@ void implantDecayHists(const char* input, const char* output){
 
   TH1F* h1_postcut_implant_event_rate = new TH1F("postcut_implant_event_rate", "Implant Event Rate (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_postcut_decay_event_rate = new TH1F("postcut_decay_event_rate", "Decay Event Rate (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  TH1F* h1_postcut_decay_event_rate_onspill = new TH1F("postcut_decay_event_rate_onspill", "Decay Event Rate Onspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  TH1F* h1_postcut_decay_event_rate_offspill = new TH1F("postcut_decay_event_rate_offspill", "Decay Event Rate Offspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
 
   TH2F* h2_implant_strip_energy = new TH2F("implant_strip_energy", "Implant Strip vs Energy Matrix", 528, 0, 528, 7000/20, 0, 7000);
   TH2F* h2_decay_strip_energy = new TH2F("decay_strip_energy", "Decay Strip vs Energy Matrix", 528, 0, 528, 1500/20, 0, 1500);
@@ -213,7 +215,7 @@ void implantDecayHists(const char* input, const char* output){
       h2_implant_strip_energy->Fill(*implant_y+400, *implant_e);
       h2_implant_xy_energy->Fill(*implant_ex, *implant_ey);
       h1_implant_energy->Fill(*implant_e);
-      all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y,*gatedimplant_e, *gatedimplant_ex, *gatedimplant_ey,  *implant_spill, *implant_bplast, *implant_dssd, IMPLANT));
+      all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y,*implant_e, *implant_ex, *implant_ey,  *implant_spill, *implant_bplast, *implant_dssd, IMPLANT));
     }
   }
   std::cout << "Finished filling the implant map" << std::endl;
@@ -229,7 +231,7 @@ void implantDecayHists(const char* input, const char* output){
       h2_decay_xy_energy->Fill(*decay_ex, *decay_ey);
       h1_decay_energy->Fill(*decay_e);
       h1_decay_xy_dt->Fill(*decay_time_x-*decay_time_y);
-      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y,*gatedimplant_e, *gatedimplant_ex, *gatedimplant_ey,  *decay_dssd, *decay_spill, DECAY));
+      good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y,*decay_e, *decay_ex, *decay_ey,  *decay_dssd, *decay_spill, DECAY));
     }
   }
   std::cout << "Finished filling the decay map" << std::endl;
