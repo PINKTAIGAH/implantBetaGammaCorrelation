@@ -33,7 +33,7 @@ namespace constants{
 
 // Define the data structures for branches
 struct implant_data{
-  uint64_t time;
+  long long time;
   int stopped;
   int dssd;
   double x;
@@ -46,9 +46,9 @@ struct implant_data{
 }aida_implant_data;
   
 struct decay_data{
-  uint64_t time;
-  uint64_t time_x;
-  uint64_t time_y;
+  long long time;
+  long long time_x;
+  long long time_y;
   double x;
   double y;
   double energy;
@@ -226,7 +226,7 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Create tree reader values for the branches you want to read
   TTreeReaderValue<bool> spill(reader, "EventHeader.fSpillFlag");
-  TTreeReaderArray<int64_t> implant_time(reader, "AidaImplantHits.Time");
+  TTreeReaderArray<long long> implant_time(reader, "AidaImplantHits.Time");
   TTreeReaderArray<Int_t> implant_dssd(reader, "AidaImplantHits.DSSD");
   TTreeReaderArray<Bool_t> implant_stopped(reader, "AidaImplantHits.Stopped");
   TTreeReaderArray<double> implant_energy(reader, "AidaImplantHits.Energy");
@@ -240,16 +240,16 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Int_t> implant_adc_strip(reader, "AidaImplantCalAdcData.strip");
   TTreeReaderArray<Int_t> implant_adc_fee(reader, "AidaImplantCalAdcData.fee");
   TTreeReaderArray<Double_t> implant_adc_energy(reader, "AidaImplantCalAdcData.energy");
-  TTreeReaderArray<uint64_t> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
+  TTreeReaderArray<unsigned long long> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
 
   TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
   TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
 
-  TTreeReaderArray<int64_t> decay_time(reader, "AidaDecayHits.Time");
+  TTreeReaderArray<long long> decay_time(reader, "AidaDecayHits.Time");
   TTreeReaderArray<Int_t> decay_dssd(reader, "AidaDecayHits.DSSD");
-  TTreeReaderArray<int64_t> decay_time_x(reader, "AidaDecayHits.TimeX");
-  TTreeReaderArray<int64_t> decay_time_y(reader, "AidaDecayHits.TimeY");
+  TTreeReaderArray<long long> decay_time_x(reader, "AidaDecayHits.TimeX");
+  TTreeReaderArray<long long> decay_time_y(reader, "AidaDecayHits.TimeY");
   TTreeReaderArray<Double_t> decay_energy(reader, "AidaDecayHits.Energy");
   TTreeReaderArray<Double_t> decay_energy_x(reader, "AidaDecayHits.EnergyX");
   TTreeReaderArray<Double_t> decay_energy_y(reader, "AidaDecayHits.EnergyY");
@@ -263,7 +263,7 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Int_t> decay_adc_strip(reader, "AidaDecayCalAdcData.strip");
   TTreeReaderArray<Int_t> decay_adc_fee(reader, "AidaDecayCalAdcData.fee");
   TTreeReaderArray<Double_t> decay_adc_energy(reader, "AidaDecayCalAdcData.energy");
-  TTreeReaderArray<uint64_t> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
+  TTreeReaderArray<unsigned long long> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
 
   TTreeReaderArray<uint64_t> germanium_time(reader, "GermaniumCalData.fwr_t");
   TTreeReaderArray<int64_t> germanium_abs_ev_time(reader, "GermaniumCalData.fabsolute_event_time");
@@ -429,7 +429,6 @@ void makeAnatrees(const char* input, const char* output) {
         implant_tree->Fill();
       }
     }
-
 
     // *************************************************************************************
     // ****************************** LOOP OVER GATED IMPLANTS  *****************************

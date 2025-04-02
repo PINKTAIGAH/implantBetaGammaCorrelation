@@ -186,7 +186,7 @@ void eventwiseHists(const char* input, const char* output) {
 
   // Create tree reader values for the branches you want to read
   TTreeReaderValue<bool> spill(reader, "EventHeader.fSpillFlag");
-  TTreeReaderArray<int64_t> implant_time(reader, "AidaImplantHits.Time");
+  TTreeReaderArray<long long> implant_time(reader, "AidaImplantHits.Time");
   TTreeReaderArray<Int_t> implant_dssd(reader, "AidaImplantHits.DSSD");
   TTreeReaderArray<Bool_t> implant_stopped(reader, "AidaImplantHits.Stopped");
   TTreeReaderArray<double> implant_energy(reader, "AidaImplantHits.Energy");
@@ -200,16 +200,16 @@ void eventwiseHists(const char* input, const char* output) {
   TTreeReaderArray<Int_t> implant_adc_strip(reader, "AidaImplantCalAdcData.strip");
   TTreeReaderArray<Int_t> implant_adc_fee(reader, "AidaImplantCalAdcData.fee");
   TTreeReaderArray<Double_t> implant_adc_energy(reader, "AidaImplantCalAdcData.energy");
-  TTreeReaderArray<uint64_t> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
+  TTreeReaderArray<unsigned long long> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
 
   TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
   TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
 
-  TTreeReaderArray<int64_t> decay_time(reader, "AidaDecayHits.Time");
+  TTreeReaderArray<long long> decay_time(reader, "AidaDecayHits.Time");
   TTreeReaderArray<Int_t> decay_dssd(reader, "AidaDecayHits.DSSD");
-  TTreeReaderArray<int64_t> decay_time_x(reader, "AidaDecayHits.TimeX");
-  TTreeReaderArray<int64_t> decay_time_y(reader, "AidaDecayHits.TimeY");
+  TTreeReaderArray<long long> decay_time_x(reader, "AidaDecayHits.TimeX");
+  TTreeReaderArray<long long> decay_time_y(reader, "AidaDecayHits.TimeY");
   TTreeReaderArray<Double_t> decay_energy(reader, "AidaDecayHits.Energy");
   TTreeReaderArray<Double_t> decay_energy_x(reader, "AidaDecayHits.EnergyX");
   TTreeReaderArray<Double_t> decay_energy_y(reader, "AidaDecayHits.EnergyY");
@@ -223,7 +223,7 @@ void eventwiseHists(const char* input, const char* output) {
   TTreeReaderArray<Int_t> decay_adc_strip(reader, "AidaDecayCalAdcData.strip");
   TTreeReaderArray<Int_t> decay_adc_fee(reader, "AidaDecayCalAdcData.fee");
   TTreeReaderArray<Double_t> decay_adc_energy(reader, "AidaDecayCalAdcData.energy");
-  TTreeReaderArray<uint64_t> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
+  TTreeReaderArray<unsigned long long> decay_adc_time(reader, "AidaDecayCalAdcData.slowTime");
 
   TTreeReaderArray<uint64_t> germanium_time(reader, "GermaniumCalData.fwr_t");
   TTreeReaderArray<int64_t> germanium_abs_ev_time(reader, "GermaniumCalData.fabsolute_event_time");
@@ -274,7 +274,7 @@ void eventwiseHists(const char* input, const char* output) {
   /*reader.Restart(); // Reset reader for next loop*/
   /**/
   /*// Find white rabbit time difference of experiments*/
-  /*ULong_t wr_dt = wr_end - wr_start;*/
+  ULong_t wr_dt = wr_end - wr_start;
 
   std::cout << "Found file white rabbit times!" << std::endl;
   std::cout << "WR Start time: " << wr_start << "  #####    WR End time: " << wr_end << std::endl;  
@@ -325,9 +325,11 @@ void eventwiseHists(const char* input, const char* output) {
 
   // Bplast Channel Multiplicity per implant event 
   TH1F* h1_aida_implant_bplast_multiplicity = new TH1F("aida_implant_bplast_multiplicity", "AIDA Implant Event - Bplast Channel Multiplicity (Upstream + Downstream)", 140, 0, 140); 
+  TH2F* h2_aida_implant_energy_bplast_multiplicity = new TH2F("aida_implant_energy_bplast_multiplicity", "AIDA Implant Event Energy - Bplast Channel Multiplicity (Upstream + Downstream)", 7000/20, 0, 7000, 140, 0, 140); 
 
   // Bplast Channel Multiplicity per gatedimplant event 
   std::map<std::string, TH1F*> h1_aida_gatedimplant_bplast_multiplicity_map = {};
+  std::map<std::string, TH2F*> h2_aida_gatedimplant_energy_bplast_multiplicity_map = {};
   
   // Loop over all gated implants and fill map
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
@@ -340,10 +342,17 @@ void eventwiseHists(const char* input, const char* output) {
     // Make histogram and fill map
     TH1F* h1_aida_gatedimplant_bplast_multiplicity = new TH1F(histogram_name.c_str(), histogram_title.c_str(), 140, 0, 140);
     h1_aida_gatedimplant_bplast_multiplicity_map.emplace(gatedimplant_name, h1_aida_gatedimplant_bplast_multiplicity);
+
+    // Make histogram strings
+    histogram_name = "aida_" + gatedimplant_name + "energy_implant_bplast_multiplicity";
+    histogram_title = "AIDA " + gatedimplant_name + " Implant Event Energy - Bplast Channel Multiplicity (Upstream + Downstream)";
+
+    TH2F* h2_aida_gatedimplant_energy_bplast_multiplicity = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 7000/20, 0, 7000, 140, 0, 140);
+    h2_aida_gatedimplant_energy_bplast_multiplicity_map.emplace(gatedimplant_name, h2_aida_gatedimplant_energy_bplast_multiplicity);
   }
 
   // FRS histograms
-  TH2F* h2_frs_z_z2 = new TH2F("frs_z_z2", "FRS Z vs Z2", 1000, 58, 68, 1000, 58, 68);
+  TH2F* h2_frs_z_z2 = new TH2F("frs_z_z2", "FRS Z vs Z2", 1000, 30, 50, 1000, 30, 50);
   TH2F* h2_frs_z_aoq = new TH2F("frs_z_aoq", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
   TH2F* h2_frs_aoq_x4 = new TH2F("frs_aoq_x4", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);
   TH2F* h2_frs_dedeg_z = new TH2F("frs_dedeg_z", "FRS dEdeg vs Z", 1000, 40, 50, 1000, 58, 68);
@@ -453,6 +462,10 @@ void eventwiseHists(const char* input, const char* output) {
           // Fill bplast channel multiplicities   
           h1_aida_implant_bplast_multiplicity->Fill(bplast_upstream_channel_multiplicity); 
           h1_aida_implant_bplast_multiplicity->Fill(bplast_downstream_channel_multiplicity + 70); 
+          
+          // Fill bplast channel multiplicity vs implant energy
+          h2_aida_implant_energy_bplast_multiplicity->Fill(implant_energy[j], bplast_upstream_channel_multiplicity); 
+          h2_aida_implant_energy_bplast_multiplicity->Fill(implant_energy[j], bplast_downstream_channel_multiplicity + 70); 
       
         }
 
@@ -514,6 +527,10 @@ void eventwiseHists(const char* input, const char* output) {
                   // Fill bplast channel multiplicity for each gatedimplant isotope     
                   h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_upstream_channel_multiplicity); // Upstream
                   h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_downstream_channel_multiplicity + 70); // Downstream
+
+                  // Fill bplast channel multiplicity vs implant energy
+                  h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_upstream_channel_multiplicity); // Upstream
+                  h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_downstream_channel_multiplicity + 70); // Downstream
 
                   gatedimplant_counter_map[gimp_key]++; // Increase counter
 
@@ -737,6 +754,12 @@ void eventwiseHists(const char* input, const char* output) {
   // Write implant bplast channel multiplicities
   h1_aida_implant_bplast_multiplicity->Write();
   for (auto itr : h1_aida_gatedimplant_bplast_multiplicity_map){
+    itr.second->Write();
+  }
+
+  // Write implant energy vs bplast channel multiplicities
+  h2_aida_implant_energy_bplast_multiplicity->Write();
+  for (auto itr : h2_aida_gatedimplant_energy_bplast_multiplicity_map){
     itr.second->Write();
   }
 

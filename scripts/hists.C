@@ -18,7 +18,7 @@
 
 namespace constants{
   const std::string ISOTOPE_TREE = "85mo"; // Name suffix for gatedimplant tree & branch in anatree
-  const int DSSD = 1; // Which DSSD will the analysis be run on
+  const int DSSD = 3; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
@@ -172,7 +172,7 @@ void hists(const char* input, const char* output){
 
   // Read decay events
   while (decay_reader.Next()){
-    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<3000 ){
+    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
       good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y,*decay_e, *decay_ex, *decay_ey,  *decay_dssd, *decay_spill, DECAY));
     }
   }

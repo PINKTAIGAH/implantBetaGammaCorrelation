@@ -17,7 +17,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "85mo"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -25,8 +25,8 @@ namespace constants{
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 45 * TIME_SCALE; // Time threshold for implant beta correlation
-  const int64_t TIME_PER_BIN = 50e6; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_THRESHOLD = 40 * TIME_SCALE; // Time threshold for implant beta correlation
+  const double TIME_PER_BIN = 1e8; // Time per bin in Implant-beta time correlation
   const int64_t SPILLSTRUCTURE_BINS = TIME_THRESHOLD/TIME_PER_BIN;
 
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
@@ -34,7 +34,7 @@ namespace constants{
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_IMPLANT = {};
-  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {128, 191, 192}; 
+  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {63, 64, 66, 130, 189, 194, 225, 256, 319, 320}; 
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_DECAY = {};
 }
 
@@ -135,10 +135,12 @@ void spillstructure(const char* input, const char* output){
   TTreeReaderValue<double> gatedimplant_ex(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ex") ).c_str());
   TTreeReaderValue<double> gatedimplant_ey(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".ey") ).c_str());
   TTreeReaderValue<Int_t> gatedimplant_spill(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".sp") ).c_str()); // sp = 1 spill, sp = 2 no spill
-  TTreeReaderValue<Int_t> gatedimplant_bplast(gatedimplant_reader, "gatedimplant.bp"); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired
+  TTreeReaderValue<Int_t> gatedimplant_bplast(gatedimplant_reader, ( std::string("gatedimplant_")+constants::ISOTOPE_TREE+std::string(".bp") ).c_str()); // bp = 0 neither fired, bp = 1 only bp1 fired, bp = 2 only bp2 fired, bp = 3 both fired
 
   // Define leaves of variables for decay tree
   TTreeReaderValue<ULong64_t> decay_time(decay_reader, "decay.time");
+  TTreeReaderValue<ULong64_t> decay_time_x(decay_reader, "decay.time_x");
+  TTreeReaderValue<ULong64_t> decay_time_y(decay_reader, "decay.time_y");
   TTreeReaderValue<int> decay_dssd(decay_reader, "decay.dssd");
   TTreeReaderValue<double> decay_x(decay_reader, "decay.x");
   TTreeReaderValue<double> decay_y(decay_reader, "decay.y");
@@ -187,7 +189,7 @@ void spillstructure(const char* input, const char* output){
 
   // Read decay events
   while (decay_reader.Next()){
-    if( *decay_dssd==constants::DSSD && TMath::Abs(*decay_time_x-*decay_time_y)<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e<151 && *decay_e>3000 ){
+    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
       good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill, DECAY));
     }
   }

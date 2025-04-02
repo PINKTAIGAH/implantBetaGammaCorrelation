@@ -17,16 +17,16 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "85mo"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 120 * TIME_SCALE; // Time threshold for implant beta correlation
-  const int64_t TIME_PER_BIN = 4e6; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_PER_BIN = 1e6; // Time per bin in Implant-beta time correlation
   const int64_t IMPDECAY_TIME_BINS = TIME_THRESHOLD/TIME_PER_BIN;
 
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
@@ -34,14 +34,14 @@ namespace constants{
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_IMPLANT = {};
-  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {128, 191, 192}; 
+  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {63, 64, 66, 130, 189, 194, 225, 256, 319, 320}; 
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_DECAY = {};
 }
 
 namespace experimentInfo{
     const uint64_t WR_EXPERIMENT_START = 1.7401830e+18; // White rabbit start time of files 
     const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,
-    const int64_t SLICES_EVERY = 1e-3; // Size of white rabbit histogram bins 
+    const double SLICES_EVERY = 1e-3; // Size of white rabbit histogram bins 
     const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
     const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
 }
@@ -190,6 +190,9 @@ void implantDecayHists(const char* input, const char* output){
 
   TH2F* h2_decay_energy_de_dt = new TH2F("decay_energy_de_dt", "Decay XY Energy difference vs Implant-Decay dt", 168/4, 0, 168, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD); 
 
+  TH2F* h2_implant_interuption_pixels = new TH2F("implant_interuption_pixels", "Implants Occuring within T_c XY", 384, 0, 384, 128, 0, 128);
+  TH1F* h1_implant_interuption_dt = new TH1F("implant_interuption_dt", "Implants Occuring within T_c dt", 2500, 0, 50);
+
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
   // *************************************************************************************
@@ -238,7 +241,7 @@ void implantDecayHists(const char* input, const char* output){
   std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
 
   // *************************************************************************************
-  // ****************************** LOOP OVER GATED IMPLANTS *****************************
+  // ****************************** ANLYSIS **********************************************
   // *************************************************************************************
 
   // Define & declare variebles to be used inside loop of gated implant events
@@ -249,8 +252,13 @@ void implantDecayHists(const char* input, const char* output){
   int matched_implantdecays_counter = 0;
   int matched_backwards_implantdecays_counter = 0;
 
+
+  // *************************************************************************************
+  // ****************************** LOOP OVER IMPLANTS **********************************
+  // *************************************************************************************
+
   // Loop over all gated implant events in map and perform a beta match
-  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
+  for (auto gimp_evt = gated_implants_map.begin(); gimp_evt != gated_implants_map.end(); gimp_evt++){
     
     // Unpack event variables for current gated implant event
     auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
@@ -358,6 +366,44 @@ void implantDecayHists(const char* input, const char* output){
 
   } // End of gated implant event loop
   
+
+  // *************************************************************************************
+  // ****************************** IMPLANT INTERUPTIONS *********************************
+  // *************************************************************************************
+  
+  std::cout << "Started interrupted implant loop ..." << std::endl;
+  
+  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
+
+
+    last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
+    auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
+    gatedimplant_pos_x = x;
+    gatedimplant_pos_y = y;
+
+    for (auto gimp_second_evt = all_implants_map.lower_bound(last_gatedimplant_time); gimp_second_evt!=all_implants_map.upper_bound(last_gatedimplant_time+50e9); gimp_second_evt++){
+
+      int64_t current_gatedimplant_time = gimp_second_evt->first;
+      auto [x_curr, y_curr, e_curr, ex_curr, ey_curr, spill_curr, bplast_curr, dssd_curr, type_curr] = gimp_second_evt->second;
+
+      if (current_gatedimplant_time>last_gatedimplant_time+50e9){break;}
+
+      if ( TMath::Abs(x_curr - gatedimplant_pos_x) <= constants::POSITION_THRESHOLD && TMath::Abs(y_curr - gatedimplant_pos_y) <= constants::POSITION_THRESHOLD ){
+
+        int64_t time_diff=current_gatedimplant_time-last_gatedimplant_time;
+
+        if (time_diff<=50e9){
+          h2_implant_interuption_pixels->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
+          h1_implant_interuption_dt->Fill(time_diff);
+        }
+      }
+
+    } 
+
+  }
+
+  std::cout << "Finished interrupted implant loop!" << std::endl;
+
  
     
   // *************************************************************************************
@@ -399,6 +445,9 @@ void implantDecayHists(const char* input, const char* output){
   h2_strip_dt->Write();
 
   h2_decay_energy_de_dt->Write();
+
+  h2_implant_interuption_pixels->Write();
+  h1_implant_interuption_dt->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 

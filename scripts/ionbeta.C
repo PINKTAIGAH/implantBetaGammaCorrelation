@@ -20,24 +20,25 @@ namespace constants{
   const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
-  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
+  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 100 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_THRESHOLD = 80 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
   const int64_t PROMPT_WINDOW_START = 13610; 
   const int64_t PROMPT_WINDOW_END = 16223; 
 
-  const int LIFETIME_BINS = 100;  // Bin # used for lifetime decay plot 
+  const double LIFETIME_BINS_WIDTH = 500e6;    // Bin # used for lifetime decay plot 
+  const double LIFETIME_BINS = TIME_THRESHOLD/LIFETIME_BINS_WIDTH;    // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_IMPLANT = {};
-  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {128, 191, 192}; 
+  const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {63, 64, 66, 130, 189, 194, 225, 256, 319, 320}; 
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_DECAY = {};
 }
 
@@ -200,7 +201,7 @@ void ionbeta(const char* input, const char* output){
 
   // Read gated implant events
   while (gatedimplant_reader.Next()){
-    if( *gatedimplant_dssd==constants::DSSD /*&& *gatedimplant_bplast==0*/ ){
+    if( *gatedimplant_dssd==constants::DSSD && *gatedimplant_bplast==0 ){
       gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_spill, *gatedimplant_bplast, *gatedimplant_dssd, GATEDIMPLANT));
     }
   }
@@ -209,7 +210,7 @@ void ionbeta(const char* input, const char* output){
 
   // Read implant events
   while (implant_reader.Next()){
-    if( *implant_dssd==constants::DSSD /*&& *implant_bplast==0*/ ){
+    if( *implant_dssd==constants::DSSD && *implant_bplast==0 ){
       all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y, *implant_spill, *implant_bplast, *implant_dssd, IMPLANT));
     }
   }
@@ -218,9 +219,9 @@ void ionbeta(const char* input, const char* output){
 
   // Read decay events
   while (decay_reader.Next()){
-    /*if( *decay_dssd==constants::DSSD && TMath::Abs(*decay_time_x-*decay_time_y)<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<3000 ){*/
+    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
       good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill, DECAY));
-    /*}*/
+    }
   }
   std::cout << "Finished filling the decay map" << std::endl;
   std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
@@ -344,7 +345,7 @@ void ionbeta(const char* input, const char* output){
               matched_decays_map.emplace(decay_evt->first, std::make_tuple(decay_x, decay_y, decay_spill, DECAY));
 
               //************* DEBUG **************
-              /*std::cout << decay_spill << std::endl;*/
+              std::cout << time_diff/1e9 << std::endl;
               //************* DEBUG **************
             }
 
@@ -367,6 +368,9 @@ void ionbeta(const char* input, const char* output){
               
               //************* DEBUG **************
               /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
+              //************* DEBUG **************
+              //************* DEBUG **************
+              std::cout << time_diff/1e9 << std::endl;
               //************* DEBUG **************
             }
 
