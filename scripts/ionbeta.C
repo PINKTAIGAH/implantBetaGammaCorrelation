@@ -20,20 +20,20 @@ namespace constants{
   const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
-  const bool ONLY_OFFSPILL_DECAY = true; // Check for onspill decay matches
-  const bool CHECK_BETA_CANDITATES = false; // Check for all beta candidates of an implant
+  const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
+  const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 80 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t TIME_THRESHOLD = 100 * TIME_SCALE; // Time threshold for implant beta correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
   const int64_t PROMPT_WINDOW_START = 13610; 
   const int64_t PROMPT_WINDOW_END = 16223; 
 
-  const double LIFETIME_BINS_WIDTH = 500e6;    // Bin # used for lifetime decay plot 
-  const double LIFETIME_BINS = TIME_THRESHOLD/LIFETIME_BINS_WIDTH;    // Bin # used for lifetime decay plot 
+  const double LIFETIME_BINS_WIDTH = 3e9;    // Bin # used for lifetime decay plot 
+  const double LIFETIME_BINS = 2*TIME_THRESHOLD/LIFETIME_BINS_WIDTH;    // Bin # used for lifetime decay plot 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
 
   const std::vector<double> BROKEN_AIDA_X_STRIPS_IMPLANT = {};
@@ -192,6 +192,10 @@ void ionbeta(const char* input, const char* output){
   // Histograms for gamma correlated events
   TH1F* h1_implantbetagamma_spectrum = new TH1F("implantbetagamma_spectrum", "Implant-Beta-Gamma Energy Spectrum; Energy (keV); Counts/keV", 2000, 0, 2000);
 
+  //************* DEBUG **************
+  TNtuple* nt_aida_implant_beta_dt = new TNtuple("nt_aida_implant_beta_dt", "Implant Decay dt", "dt");
+  //************* DEBUG **************
+
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
   // *************************************************************************************
@@ -345,8 +349,9 @@ void ionbeta(const char* input, const char* output){
               matched_decays_map.emplace(decay_evt->first, std::make_tuple(decay_x, decay_y, decay_spill, DECAY));
 
               //************* DEBUG **************
-              std::cout << time_diff/1e9 << std::endl;
+              nt_aida_implant_beta_dt->Fill((double)time_diff);
               //************* DEBUG **************
+              
             }
 
           }
@@ -367,10 +372,7 @@ void ionbeta(const char* input, const char* output){
               found_backwards_candidate = true; // Change flag for succesfull backward implant decay match
               
               //************* DEBUG **************
-              /*std::cout << decay_x << " " << decay_y << " " << time_diff/constants::TIME_SCALE  << std::endl;*/
-              //************* DEBUG **************
-              //************* DEBUG **************
-              std::cout << time_diff/1e9 << std::endl;
+              nt_aida_implant_beta_dt->Fill((double)time_diff);
               //************* DEBUG **************
             }
 
@@ -459,6 +461,7 @@ void ionbeta(const char* input, const char* output){
   if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_x->Write(); }
   if (constants::CHECK_BETA_CANDITATES){ h1_implantbeta_candidate_hitpattern_y->Write(); }
   h1_implantbetagamma_spectrum->Write();
+  nt_aida_implant_beta_dt->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 

@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "makeAnatrees.C": "cpp",
+        "eventwiseHists.C": "cpp",
+        "ionbeta.C": "cpp",
+        "implantDecayHists.C": "cpp"
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+}

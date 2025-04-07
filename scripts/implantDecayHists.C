@@ -40,9 +40,10 @@ namespace constants{
 
 namespace experimentInfo{
     const uint64_t WR_EXPERIMENT_START = 1.7401830e+18; // White rabbit start time of files 
-    const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,
-    const double SLICES_EVERY = 1e-3; // Size of white rabbit histogram bins 
-    const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
+    const uint64_t WR_EXPERIMENT_END = 1.74018310e+18; // White rabbit end time of files,
+    /*const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,*/
+    const double SLICES_EVERY = 700e3; // Size of white rabbit histogram bins 
+    const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START); // Duration of experiment
     const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
 }
 
@@ -167,8 +168,9 @@ void implantDecayHists(const char* input, const char* output){
 
   TH1F* h1_postcut_implant_event_rate = new TH1F("postcut_implant_event_rate", "Implant Event Rate (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_postcut_decay_event_rate = new TH1F("postcut_decay_event_rate", "Decay Event Rate (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
-  TH1F* h1_postcut_decay_event_rate_onspill = new TH1F("postcut_decay_event_rate_onspill", "Decay Event Rate Onspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
-  TH1F* h1_postcut_decay_event_rate_offspill = new TH1F("postcut_decay_event_rate_offspill", "Decay Event Rate Offspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  TH1D* h1_postcut_decay_event_rate_onspill = new TH1D("postcut_decay_event_rate_onspill", "Decay Event Rate Onspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  TH1D* h1_postcut_decay_event_rate_offspill = new TH1D("postcut_decay_event_rate_offspill", "Decay Event Rate Offspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  
 
   TH2F* h2_implant_strip_energy = new TH2F("implant_strip_energy", "Implant Strip vs Energy Matrix", 528, 0, 528, 7000/20, 0, 7000);
   TH2F* h2_decay_strip_energy = new TH2F("decay_strip_energy", "Decay Strip vs Energy Matrix", 528, 0, 528, 1500/20, 0, 1500);
@@ -189,9 +191,6 @@ void implantDecayHists(const char* input, const char* output){
   TH2F* h2_strip_dt = new TH2F("strip_dt", "Strip XY vs Implant-Decay dt", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
 
   TH2F* h2_decay_energy_de_dt = new TH2F("decay_energy_de_dt", "Decay XY Energy difference vs Implant-Decay dt", 168/4, 0, 168, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD); 
-
-  TH2F* h2_implant_interuption_pixels = new TH2F("implant_interuption_pixels", "Implants Occuring within T_c XY", 384, 0, 384, 128, 0, 128);
-  TH1F* h1_implant_interuption_dt = new TH1F("implant_interuption_dt", "Implants Occuring within T_c dt", 2500, 0, 50);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -235,6 +234,9 @@ void implantDecayHists(const char* input, const char* output){
       h1_decay_energy->Fill(*decay_e);
       h1_decay_xy_dt->Fill(*decay_time_x-*decay_time_y);
       good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y,*decay_e, *decay_ex, *decay_ey,  *decay_dssd, *decay_spill, DECAY));
+
+      if (*decay_spill==1){h1_postcut_decay_event_rate_onspill->Fill(*decay_time);}
+      if (*decay_spill==2){h1_postcut_decay_event_rate_offspill->Fill(*decay_time);}
     }
   }
   std::cout << "Finished filling the decay map" << std::endl;
@@ -370,31 +372,43 @@ void implantDecayHists(const char* input, const char* output){
   // *************************************************************************************
   // ****************************** IMPLANT INTERUPTIONS *********************************
   // *************************************************************************************
+
+  int64_t interruption_time_scale = 1e6;
+  int64_t interruption_time_threshold = 500 * interruption_time_scale;
+  int interruption_pos_threshold = 1;
+  double interruption_binwidth = 2e6;
+  
+  TH2F* h2_implant_xy = new TH2F("implant_xy", "Implant Hit Pattern", 384, 0, 384, 128, 0, 128);
+  TH2F* h2_implant_interuption_pixels = new TH2F("implant_interuption_pixels", Form("XY of subsequent Implants Occuring within %.1e ns of an implant XY", (double)interruption_time_threshold), 384, 0, 384, 128, 0, 128);
+  TH1F* h1_implant_interuption_dt = new TH1F("implant_interuption_dt", Form("dT of Subsequent Implants Occuring within %.1e ns of an implant;dt;%.1e", (double)interruption_time_threshold, interruption_binwidth), interruption_time_threshold/interruption_binwidth, 0, interruption_time_threshold);
+
   
   std::cout << "Started interrupted implant loop ..." << std::endl;
   
-  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
-
+  for (auto gimp_evt = gated_implants_map.begin(); gimp_evt != gated_implants_map.end(); gimp_evt++){
 
     last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
     auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
     gatedimplant_pos_x = x;
     gatedimplant_pos_y = y;
+    h2_implant_xy->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
 
-    for (auto gimp_second_evt = all_implants_map.lower_bound(last_gatedimplant_time); gimp_second_evt!=all_implants_map.upper_bound(last_gatedimplant_time+50e9); gimp_second_evt++){
+    for (auto gimp_second_evt = all_implants_map.begin(); gimp_second_evt!=all_implants_map.end(); gimp_second_evt++){
 
       int64_t current_gatedimplant_time = gimp_second_evt->first;
+
+      if (last_gatedimplant_time > current_gatedimplant_time || last_gatedimplant_time==current_gatedimplant_time){continue;}
+      if (current_gatedimplant_time > last_gatedimplant_time+interruption_time_threshold ){break;}
+
       auto [x_curr, y_curr, e_curr, ex_curr, ey_curr, spill_curr, bplast_curr, dssd_curr, type_curr] = gimp_second_evt->second;
+      int64_t time_diff=current_gatedimplant_time-last_gatedimplant_time;
 
-      if (current_gatedimplant_time>last_gatedimplant_time+50e9){break;}
+      if ( TMath::Abs(x_curr - gatedimplant_pos_x) <= interruption_pos_threshold && TMath::Abs(y_curr - gatedimplant_pos_y) <= interruption_pos_threshold ){
 
-      if ( TMath::Abs(x_curr - gatedimplant_pos_x) <= constants::POSITION_THRESHOLD && TMath::Abs(y_curr - gatedimplant_pos_y) <= constants::POSITION_THRESHOLD ){
-
-        int64_t time_diff=current_gatedimplant_time-last_gatedimplant_time;
-
-        if (time_diff<=50e9){
+        if (time_diff<=interruption_time_threshold){
           h2_implant_interuption_pixels->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
           h1_implant_interuption_dt->Fill(time_diff);
+          std::cout << "Found an interruption: " << time_diff/(double)interruption_time_scale << std::endl;
         }
       }
 
@@ -402,7 +416,7 @@ void implantDecayHists(const char* input, const char* output){
 
   }
 
-  std::cout << "Finished interrupted implant loop!" << std::endl;
+  std::cout << "Finished interrupted implant loop!" << std::endl << std::endl;
 
  
     
@@ -416,6 +430,19 @@ void implantDecayHists(const char* input, const char* output){
   std::cout << "Matched: " << matched_implantdecays_counter << " out of " << all_implants_map.size() << " implant events" << std::endl;
   std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl << std::endl;
   
+  
+  // *************************************************************************************
+  // ****************************** MAKE STACKED HISTOGRAMS ******************************
+  // *************************************************************************************
+
+  THStack* sh1_decay_event_rate_onoffspill = new THStack("decay_event_rate_onoffspill", "");
+  h1_postcut_decay_event_rate_onspill->SetLineColor(kBlue);
+  h1_postcut_decay_event_rate_offspill->SetLineColor(kRed);
+
+  sh1_decay_event_rate_onoffspill->Add(h1_postcut_decay_event_rate_onspill);
+  sh1_decay_event_rate_onoffspill->Add(h1_postcut_decay_event_rate_offspill);
+
+
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
   // *************************************************************************************
@@ -425,6 +452,7 @@ void implantDecayHists(const char* input, const char* output){
 
   h1_postcut_implant_event_rate->Write();
   h1_postcut_decay_event_rate->Write();
+  sh1_decay_event_rate_onoffspill->Write();
 
   h2_implant_strip_energy->Write();
   h2_decay_strip_energy->Write();
@@ -446,6 +474,7 @@ void implantDecayHists(const char* input, const char* output){
 
   h2_decay_energy_de_dt->Write();
 
+  h2_implant_xy->Write();
   h2_implant_interuption_pixels->Write();
   h1_implant_interuption_dt->Write();
 
