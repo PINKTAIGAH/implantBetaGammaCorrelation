@@ -1,9 +1,26 @@
-#include <iostream>
-#include <TFile.h>
-#include <TTree.h>
-#include <TTreeReader.h>
-#include <TTreeReaderArray.h>
-#include <TTreeReaderValue.h>
+#include<iostream>
+#include<fstream>
+#include<sstream>
+#include<map>
+#include<set>
+#include<unordered_map>
+#include<tuple>
+#include<utility>
+#include<string>
+#include<vector>
+
+#include<TH1F.h>
+#include<TH2F.h>
+#include <TCutG.h>
+#include<TFile.h>
+#include<TTree.h>
+#include<THStack.h>
+#include<TNtuple.h>
+#include<TString.h>
+#include<TDirectory.h>
+#include<TTreeReader.h>
+#include<TTreeReaderArray.h>
+#include<TTreeReaderValue.h>
 
 // *************************************************************************************
 // ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
@@ -357,6 +374,17 @@ void eventwiseHists(const char* input, const char* output) {
   TH2F* h2_frs_aoq_x4 = new TH2F("frs_aoq_x4", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);
   TH2F* h2_frs_dedeg_z = new TH2F("frs_dedeg_z", "FRS dEdeg vs Z", 1000, 40, 50, 1000, 58, 68);
 
+  // Decay Hits multiplicity
+  TH1F* h1_aida_decay_multiplicity_allspill = new TH1F("aida_decay_multiplicity_allspill", "AIDA decay sub-event multiplicity per event (Allspill)", 50, 0, 50);
+  TH1F* h1_aida_decay_multiplicity_onspill = new TH1F("aida_decay_multiplicity_onspill", "AIDA decay sub-event multiplicity per event (Onspill)", 50, 0, 50);
+  TH1F* h1_aida_decay_multiplicity_offspill = new TH1F("aida_decay_multiplicity_offspill", "AIDA decay sub-event multiplicity per event (Offspill)", 50, 0, 50);
+  THStack* sh1_aida_decay_multiplicity = new THStack("aida_decay_multiplicity", "AIDA decay sub-event multiplicity per event");
+
+  // Plot Decay cluster sizes
+  TH1F* h1_aida_decay_cluster_size_x =new TH1F("aida_decay_cluster_size_x", "AIDA Decay X Strip Cluster Size", 10, 0, 10);
+  TH1F* h1_aida_decay_cluster_size_y =new TH1F("aida_decay_cluster_size_y", "AIDA Decay Y Strip Cluster Size", 10, 0, 10);
+  TH1F* h1_aida_decay_cluster_size =new TH1F("aida_decay_cluster_size", "AIDA Decay Y Strip Cluster Size", 100, 0, 10);
+
   // *************************************************************************************
   // ****************************** LOOP OVER ALL EVENTS *********************************
   // *************************************************************************************
@@ -585,26 +613,42 @@ void eventwiseHists(const char* input, const char* output) {
     // ****************************** LOOP OVER DECAY EVENTS *******************************
     // *************************************************************************************
 
-    /*// Empty set for each subevents*/
-    /*std::set<int> aidadecay_filledtree{};*/
-    /**/
-    /*// Loop over decay subevents*/
-    /*if(aidadecayhits == 1){*/
-    /**/
-    /*  for (int i = 0; i < aidadecayhits; i++) {*/
-    /**/
-    /*    if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {*/
-    /**/
-    /*      if (aidadecay_filledtree.count(i) == 0) {*/
-    /**/
-    /*      }*/
-    /*    }*/
-    /**/
-    /*    aidadecay_filledtree.insert(i);*/
-    /**/
-    /*  } // End of decay loop*/
-    /**/
-    /*}*/
+    // Empty set for each subevents*/
+    std::set<int> aidadecay_filledtree{};
+
+    int decay_multiplicity = 0;
+    
+    // Loop over decay subevents
+    if(aidadecayhits > 0){
+    
+      for (int i = 0; i < aidadecayhits; i++) {
+    
+        if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {
+    
+          if (aidadecay_filledtree.count(i) == 0) {
+
+            decay_multiplicity++;
+
+            if ( aidadecayhits==1 && TMath::Abs(decay_time_x[i]-decay_time_y[i])<1e3 && TMath::Abs(decay_energy_x[i]-decay_energy_y[i])<168 && decay_energy[i]>150 && decay_energy[i]<1000 ){
+
+              h1_aida_decay_cluster_size_x->Fill(decay_cluster_size_x[i]);
+              h1_aida_decay_cluster_size_y->Fill(decay_cluster_size_y[i]);
+              h1_aida_decay_cluster_size->Fill(TMath::Sqrt(decay_cluster_size_x[i]+decay_cluster_size_y[i]));
+
+            }
+    
+          }
+
+        }
+    
+      } // End of decay loop
+    
+    }
+
+    // Fill multiplicity histogram 
+    if(decay_multiplicity>0) {h1_aida_decay_multiplicity_allspill->Fill(decay_multiplicity);}
+    if(decay_multiplicity>0 && spflag==1) {h1_aida_decay_multiplicity_onspill->Fill(decay_multiplicity);}
+    if(decay_multiplicity>0 && spflag==2) {h1_aida_decay_multiplicity_offspill->Fill(decay_multiplicity);}
 
 
     // *************************************************************************************
@@ -638,26 +682,26 @@ void eventwiseHists(const char* input, const char* output) {
     
 
     // *************************************************************************************
-    // ****************************** LOOP OVER DECAY EVENTS *******************************
+    // ****************************** LOOP OVER GERMANIUMS EVENTS *******************************
     // *************************************************************************************
 
     
-    /*std::set<int> germanium_filledtree{};*/
-    /**/
-    /*// Loop over decay subevents*/
-    /*for (int j = 0; j < germaniumhits; j++){*/
-    /**/
-    /*  if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){*/
-    /**/
-    /*    if ( germanium_filledtree.count(j) == 0 ){*/
-    /**/
-    /*    }*/
-    /**/
-    /*  germanium_filledtree.insert(j);*/
-    /**/
-    /*  }*/
-    /**/
-    /*}*/
+    // std::set<int> germanium_filledtree{};
+    
+    // // Loop over decay subevents*/
+    // for (int j = 0; j < germaniumhits; j++){
+    
+    //   if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
+    
+    //     if ( germanium_filledtree.count(j) == 0 ){
+    
+    //     }
+    
+    //   germanium_filledtree.insert(j);
+    
+    //   }
+    
+    // }
 
 
     // *************************************************************************************
@@ -763,6 +807,19 @@ void eventwiseHists(const char* input, const char* output) {
     itr.second->Write();
   }
 
+  // Write decay event multiplicity
+  h1_aida_decay_multiplicity_allspill->Write();
+
+  h1_aida_decay_multiplicity_onspill->SetLineColor(kBlue);
+  h1_aida_decay_multiplicity_offspill->SetLineColor(kRed);
+  sh1_aida_decay_multiplicity->Add(h1_aida_decay_multiplicity_onspill);
+  sh1_aida_decay_multiplicity->Add(h1_aida_decay_multiplicity_offspill);
+  sh1_aida_decay_multiplicity->Write();
+
+  // Write decay cluster sizes
+  h1_aida_decay_cluster_size_x->Write();
+  h1_aida_decay_cluster_size_y->Write();
+  h1_aida_decay_cluster_size->Write();
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************

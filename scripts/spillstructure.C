@@ -1,15 +1,22 @@
-#include <iostream>
-#include <map>
-#include <unordered_map>
-#include <tuple>
-#include <utility>
-#include <string>
-#include <vector>
-#include <TFile.h>
-#include <TTree.h>
-#include <TTreeReader.h>
-#include <TTreeReaderArray.h>
-#include <TTreeReaderValue.h>
+#include<iostream>
+#include<map>
+#include<unordered_map>
+#include<tuple>
+#include<utility>
+#include<string>
+#include<vector>
+
+#include<TH1F.h>
+#include<TH2F.h>
+#include<TFile.h>
+#include<TTree.h>
+#include<THStack.h>
+#include<TNtuple.h>
+#include<TString.h>
+#include<TDirectory.h>
+#include<TTreeReader.h>
+#include<TTreeReaderArray.h>
+#include<TTreeReaderValue.h>
 
 // *************************************************************************************
 // ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
@@ -161,6 +168,8 @@ void spillstructure(const char* input, const char* output){
   TH1F* h1_aida_implant_beta_spillstructure = new TH1F("aida_implant_beta_spillstructure", "Implant-Decay Spill Structure; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
   TH1F* h1_aida_implant_beta_onspillstructure = new TH1F("aida_implant_beta_onspillstructure", "Implant-Decay Spill Structure Onspill; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
   TH1F* h1_aida_implant_beta_offspillstructure = new TH1F("aida_implant_beta_offspillstructure", "Implant-Decay Spill Structure Offspill; dT (ns); Counts", constants::SPILLSTRUCTURE_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+  THStack* sh1_onoff_spillstructure = new THStack("onoff_spillstructure", "");
+
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -189,7 +198,7 @@ void spillstructure(const char* input, const char* output){
 
   // Read decay events
   while (decay_reader.Next()){
-    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
+    if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<2.2e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
       good_decays_map.emplace(*decay_time, std::make_tuple(*decay_x, *decay_y, *decay_dssd, *decay_spill, DECAY));
     }
   }
@@ -366,8 +375,6 @@ void spillstructure(const char* input, const char* output){
   // ****************************** WRITE MERGED TO OUTPUT FILE **********************
   // *************************************************************************************
   
-  THStack* sh1_onoff_spillstructure = new THStack("onoff_spillstructure", "");
-
   h1_aida_implant_beta_onspillstructure->SetLineColor(kBlue);
   /*h1_aida_implant_beta_onspillstructure->SetLineWidth(3);*/
   sh1_onoff_spillstructure->Add(h1_aida_implant_beta_onspillstructure);

@@ -18,7 +18,7 @@ dt = file['nt_aida_implant_beta_dt;1']["dt"].array(library="numpy")
 
 time_scale = 1e9
 time_threshold = 100 * time_scale
-binwidth = 50e6
+binwidth = 500e6
 
 bin_number = int(2*time_threshold/binwidth)
 

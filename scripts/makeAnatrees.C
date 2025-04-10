@@ -1,6 +1,12 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <map>
+#include <set>
+
 #include <TFile.h>
 #include <TTree.h>
+#include <TCutG.h>
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
 #include <TTreeReaderValue.h>
@@ -54,6 +60,8 @@ struct decay_data{
   double energy;
   double energy_x;
   double energy_y;
+  int clustersize_x;
+  int clustersize_y;
   int dssd;
   int sp;
   int bp;
@@ -297,7 +305,7 @@ void makeAnatrees(const char* input, const char* output) {
 
   // Create decay tree and branches for anatree
   TTree* decay_tree = new TTree("aida_decay_tree", "New AIDA Analysis Tree");
-  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/D:dssd/I:sp/I:bp/I");
+  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/I:cl_x/I:cl_y/D:dssd/I:sp/I:bp/I");
 
   // Create germanium tree and branches for anatree
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
@@ -523,7 +531,7 @@ void makeAnatrees(const char* input, const char* output) {
     std::set<int> aidadecay_filledtree{};
 
     // Loop over decay subevents
-    if(aidadecayhits == 1){
+    if(aidadecayhits == 1 && aidaimphits == 0){
 
       for (int i = 0; i < aidadecayhits; i++) {
 
@@ -539,6 +547,8 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.energy = decay_energy[i];
             aida_decay_data.energy_x = decay_energy_x[i];
             aida_decay_data.energy_y = decay_energy_y[i];
+            aida_decay_data.clustersize_x = decay_cluster_size_x[i];
+            aida_decay_data.clustersize_y = decay_cluster_size_y[i];
             aida_decay_data.dssd = decay_dssd[i];
             aida_decay_data.sp = spflag;
             aida_decay_data.bp = bpflag;

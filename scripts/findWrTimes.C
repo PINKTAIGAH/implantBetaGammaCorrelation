@@ -15,7 +15,7 @@ void findWrTimes(const char* input){
   TTreeReader reader(tree);
 
   // Create tree reader values for the branches you want to read
-  TTreeReaderArray<Long_t> frs_time(reader, "FrsHitData.fwr_t");
+  TTreeReaderArray<long long> frs_time(reader, "FrsHitData.fwr_t");
 
   // Define the counter
   int counter = 0;

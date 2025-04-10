@@ -1,15 +1,19 @@
-#include <iostream>
-#include <map>
-#include <unordered_map>
-#include <tuple>
-#include <utility>
-#include <string>
-#include <vector>
-#include <TFile.h>
-#include <TTree.h>
-#include <TTreeReader.h>
-#include <TTreeReaderArray.h>
-#include <TTreeReaderValue.h>
+#include<iostream>
+#include<map>
+#include<unordered_map>
+#include<tuple>
+#include<utility>
+#include<string>
+#include<vector>
+
+#include<TH1F.h>
+#include<TH2F.h>
+#include<THStack.h>
+#include<TFile.h>
+#include<TTree.h>
+#include<TTreeReader.h>
+#include<TTreeReaderArray.h>
+#include<TTreeReaderValue.h>
 
 // *************************************************************************************
 // ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
@@ -170,6 +174,7 @@ void implantDecayHists(const char* input, const char* output){
   TH1F* h1_postcut_decay_event_rate = new TH1F("postcut_decay_event_rate", "Decay Event Rate (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1D* h1_postcut_decay_event_rate_onspill = new TH1D("postcut_decay_event_rate_onspill", "Decay Event Rate Onspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1D* h1_postcut_decay_event_rate_offspill = new TH1D("postcut_decay_event_rate_offspill", "Decay Event Rate Offspill (Post Cut)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  THStack* sh1_decay_event_rate_onoffspill = new THStack("decay_event_rate_onoffspill", "");
   
 
   TH2F* h2_implant_strip_energy = new TH2F("implant_strip_energy", "Implant Strip vs Energy Matrix", 528, 0, 528, 7000/20, 0, 7000);
@@ -178,7 +183,13 @@ void implantDecayHists(const char* input, const char* output){
   TH2F* h2_implant_xy_energy = new TH2F("implant_xy_energy", "Implant XY Energy", 7000/20, 0, 7000, 7000/20, 0, 7000);
   TH2F* h2_decay_xy_energy = new TH2F("decay_xy_energy", "Decay XY Energy", 1500/20, 0, 1500, 1500/20, 0, 1500);
 
-  TH1F* h1_implant_energy = new TH1F("implant_energy", "Implant Energy", 7000/20, 0, 7000);
+  TH1F* h1_implant_energy_all = new TH1F("implant_energy_all", "Implant Energy (Stopped + Punch-through)", 7000/20, 0, 7000);
+  TH1F* h1_implant_energy_stopped = new TH1F("implant_energy_stopped", "Implant Energy (Stopped)", 7000/20, 0, 7000);
+  THStack* sh1_implant_energy = new THStack("implant_energy", "Implant Energy (Stopped & Punch-through)");
+  TH1F* h1_gatedimplant_energy_all = new TH1F("gatedimplant_energy_all", (constants::ISOTOPE_TREE+std::string(" Implant Energy (Stopped + Punch-through)") ).c_str(), 7000/20, 0, 7000);
+  TH1F* h1_gatedimplant_energy_stopped = new TH1F("gatedimplant_energy_stopped", (constants::ISOTOPE_TREE+std::string(" Implant Energy (Stopped + Punch-through)") ).c_str(), 7000/20, 0, 7000);
+  THStack* sh1_gatedimplant_energy = new THStack("gatedimplant_energy", (constants::ISOTOPE_TREE+std::string(" Implant Energy (Stopped & Punch-through)") ).c_str());
+
   TH1F* h1_decay_energy = new TH1F("decay_energy", "Decay Energy", 1500/20, 0, 1500);
 
   TH2F* h2_matchedimplant_xy_short_dt = new TH2F("matchedimplant_xy_short_dt", "Matched Implant XY (dt #leq 1s)", 384, 0, 384, 128, 0, 128);
@@ -201,7 +212,9 @@ void implantDecayHists(const char* input, const char* output){
 
   // Read gated implant events
   while (gatedimplant_reader.Next()){
+    h1_gatedimplant_energy_all->Fill(*gatedimplant_e);
     if( *gatedimplant_dssd==constants::DSSD && *gatedimplant_bplast==0 ){
+      h1_gatedimplant_energy_stopped->Fill(*gatedimplant_e);
       gated_implants_map.emplace(*gatedimplant_time, std::make_tuple(*gatedimplant_x, *gatedimplant_y, *gatedimplant_e, *gatedimplant_ex, *gatedimplant_ey, *gatedimplant_spill, *gatedimplant_bplast, *gatedimplant_dssd, IMPLANT));
     }
   }
@@ -211,12 +224,13 @@ void implantDecayHists(const char* input, const char* output){
   // Read implant events
   while (implant_reader.Next()){
     h1_implant_event_rate->Fill(*implant_time);
+    h1_implant_energy_all->Fill(*implant_e);
     if( *implant_dssd==constants::DSSD && *implant_bplast==0 ){
       h1_postcut_implant_event_rate->Fill(*implant_time);
       h2_implant_strip_energy->Fill(*implant_x, *implant_e);
       h2_implant_strip_energy->Fill(*implant_y+400, *implant_e);
       h2_implant_xy_energy->Fill(*implant_ex, *implant_ey);
-      h1_implant_energy->Fill(*implant_e);
+      h1_implant_energy_stopped->Fill(*implant_e);
       all_implants_map.emplace(*implant_time, std::make_tuple(*implant_x, *implant_y,*implant_e, *implant_ex, *implant_ey,  *implant_spill, *implant_bplast, *implant_dssd, IMPLANT));
     }
   }
@@ -283,7 +297,6 @@ void implantDecayHists(const char* input, const char* output){
       // Set gated implant position
       gatedimplant_pos_x = x;
       gatedimplant_pos_y = y;
-
 
       // *************************************************************************************
       // ****************************** LOOP OVER VALID DECAYS *******************************
@@ -430,18 +443,43 @@ void implantDecayHists(const char* input, const char* output){
   std::cout << "Matched: " << matched_implantdecays_counter << " out of " << all_implants_map.size() << " implant events" << std::endl;
   std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl << std::endl;
   
+
+  // *************************************************************************************
+  // ****************************** MAKE SUBTRACTED HISTOGRAMS ***************************
+  // *************************************************************************************
+
+  // implant energy punchthrough
+  TH1F* h1_implant_energy_punchthrough = (TH1F*) h1_implant_energy_all->Clone("implant_energy_punchthrough");
+  h1_implant_energy_punchthrough->SetTitle("Implant Energy (Punch-though via subtraction)");
+  h1_implant_energy_punchthrough->Add(h1_implant_energy_stopped, -1);
+
+  // gatedimplant energy punchthrough
+  TH1F* h1_gatedimplant_energy_punchthrough = (TH1F*) h1_gatedimplant_energy_all->Clone("gatedimplant_energy_punchthrough");
+  h1_gatedimplant_energy_punchthrough->SetTitle((constants::ISOTOPE_TREE+std::string(" Implant Energy (Stopped & Punch-through)") ).c_str());
+  h1_gatedimplant_energy_punchthrough->Add(h1_gatedimplant_energy_stopped, -1);
+
   
   // *************************************************************************************
   // ****************************** MAKE STACKED HISTOGRAMS ******************************
   // *************************************************************************************
 
-  THStack* sh1_decay_event_rate_onoffspill = new THStack("decay_event_rate_onoffspill", "");
+  // Decay Event rates
   h1_postcut_decay_event_rate_onspill->SetLineColor(kBlue);
   h1_postcut_decay_event_rate_offspill->SetLineColor(kRed);
-
   sh1_decay_event_rate_onoffspill->Add(h1_postcut_decay_event_rate_onspill);
   sh1_decay_event_rate_onoffspill->Add(h1_postcut_decay_event_rate_offspill);
 
+  // Implant Energies
+  h1_implant_energy_punchthrough->SetLineColor(kBlue);
+  h1_implant_energy_stopped->SetLineColor(kRed);
+  sh1_implant_energy->Add(h1_implant_energy_punchthrough);
+  sh1_implant_energy->Add(h1_implant_energy_stopped);
+
+  // Gated implant Energies
+  h1_gatedimplant_energy_punchthrough->SetLineColor(kBlue);
+  h1_gatedimplant_energy_stopped->SetLineColor(kRed);
+  sh1_gatedimplant_energy->Add(h1_gatedimplant_energy_punchthrough);
+  sh1_gatedimplant_energy->Add(h1_gatedimplant_energy_stopped);
 
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
@@ -460,7 +498,16 @@ void implantDecayHists(const char* input, const char* output){
   h2_implant_xy_energy->Write();
   h2_decay_xy_energy->Write();
 
-  h1_implant_energy->Write();
+  h1_implant_energy_all->Write();
+  h1_implant_energy_punchthrough->Write();
+  h1_implant_energy_stopped->Write();
+  sh1_implant_energy->Write();
+
+  h1_gatedimplant_energy_all->Write();
+  h1_gatedimplant_energy_punchthrough->Write();
+  h1_gatedimplant_energy_stopped->Write();
+  sh1_gatedimplant_energy->Write();
+
   h1_decay_energy->Write();
 
   h2_matchedimplant_xy_short_dt->Write();
