@@ -21,7 +21,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -386,10 +386,11 @@ void implantDecayHists(const char* input, const char* output){
   // ****************************** IMPLANT INTERUPTIONS *********************************
   // *************************************************************************************
 
-  int64_t interruption_time_scale = 1e6;
-  int64_t interruption_time_threshold = 500 * interruption_time_scale;
+  int64_t interruption_time_scale = 1e9;
+  int64_t interruption_time_threshold = 50 * interruption_time_scale;
   int interruption_pos_threshold = 1;
   double interruption_binwidth = 2e6;
+  int interruption_counter = 0;
   
   TH2F* h2_implant_xy = new TH2F("implant_xy", "Implant Hit Pattern", 384, 0, 384, 128, 0, 128);
   TH2F* h2_implant_interuption_pixels = new TH2F("implant_interuption_pixels", Form("XY of subsequent Implants Occuring within %.1e ns of an implant XY", (double)interruption_time_threshold), 384, 0, 384, 128, 0, 128);
@@ -419,9 +420,11 @@ void implantDecayHists(const char* input, const char* output){
       if ( TMath::Abs(x_curr - gatedimplant_pos_x) <= interruption_pos_threshold && TMath::Abs(y_curr - gatedimplant_pos_y) <= interruption_pos_threshold ){
 
         if (time_diff<=interruption_time_threshold){
+          interruption_counter++;
+          // std::cout << "Interrupted implant WR: " << last_gatedimplant_time << " ##### Time Difference: " << time_diff/(double)interruption_time_scale << " ##### X,Y: " << TMath::Abs(x_curr-gatedimplant_pos_x) << "," << TMath::Abs(y_curr-gatedimplant_pos_y) << std::endl;
           h2_implant_interuption_pixels->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
           h1_implant_interuption_dt->Fill(time_diff);
-          std::cout << "Found an interruption: " << time_diff/(double)interruption_time_scale << std::endl;
+          break;
         }
       }
 
@@ -429,8 +432,8 @@ void implantDecayHists(const char* input, const char* output){
 
   }
 
+  std::cout << "Number of interruptions found: " << interruption_counter << std::endl;
   std::cout << "Finished interrupted implant loop!" << std::endl << std::endl;
-
  
     
   // *************************************************************************************

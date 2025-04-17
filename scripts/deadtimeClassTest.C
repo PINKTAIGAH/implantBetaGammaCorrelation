@@ -1,43 +1,47 @@
 #include<iostream>
 #include<vector>
 #include<algorithm>
+#include<cstdint>
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstdint>  // for uint64_t
 
 class TimeRangeManager {
-
   public:
     struct TimeRange {
-      int startTime;
-      int endTime;
+      uint64_t start;
+      uint64_t end;
 
-      bool contains(int time) const {
-        return time >= startTime && time <= endTime;
+      bool contains(uint64_t time) const {
+        return time >= start && time <= end;
       }
 
       bool operator<(const TimeRange& other) const {
-        return startTime < other.startTime;
+        return start < other.start;
       }
     };
 
     // Add a new time range
-    void addRange(int startTime, int endTime) {
-      if (startTime > endTime) std::swap(startTime, endTime);  // ensure correct order
-      ranges.push_back({startTime, endTime});
-      isMerged = true;
+    void addRange(uint64_t start, uint64_t end) {
+      if (start > end) std::swap(start, end);  // ensure proper order
+      ranges.push_back({start, end});
+      isMerged = false;
     }
 
     // Check if a time is within any merged range
-    bool contains(int time) {
-      if (isMerged) mergeRanges();
-        
+    bool contains(uint64_t time) {
+      if (!isMerged) mergeRanges();
       for (const auto& range : mergedRanges) {
         if (range.contains(time)) return true;
       }
       return false;
     }
 
-    // Get merged ranges (e.g., for debugging or output)
+    // Access the merged ranges
     const std::vector<TimeRange>& getMergedRanges() {
-      if (isMerged) mergeRanges();
+      if (!isMerged) mergeRanges();
       return mergedRanges;
     }
 
@@ -50,7 +54,7 @@ class TimeRangeManager {
     void mergeRanges() {
       if (ranges.empty()) {
         mergedRanges.clear();
-        isMerged = false;
+        isMerged = true;
         return;
       }
 
@@ -62,28 +66,25 @@ class TimeRangeManager {
         TimeRange& last = mergedRanges.back();
         const TimeRange& current = ranges[i];
 
-        if (current.startTime <= last.endTime) {
-          last.endTime = std::max(last.endTime, current.endTime);
+        if (current.start <= last.end) {
+          last.end = std::max(last.end, current.end);
         } else {
           mergedRanges.push_back(current);
         }
       }
 
-      isMerged = false;
-    }
+      isMerged = true;
+    } 
 };
 
 
-int deadtimeClassTest() {
+int deadtimeClassTest(const int64_t timeToCheck) {
   TimeRangeManager manager;
 
-  manager.addRange(100, 200);
-  manager.addRange(200, 300);
-  manager.addRange(290, 400);
-  manager.addRange(500, 600);
-  manager.addRange(601, 620);
+  manager.addRange(1740183203410465830, 1740183203410465830+50e3);
+  manager.addRange(1740183203516077830, 1740183203516077830+50e3);
+  manager.addRange(1740183203610865830, 1740183203610865830+50e3);
 
-  int timeToCheck = 50;
   if (manager.contains(timeToCheck)) {
     std::cout << "Time " << timeToCheck << " is within a range.\n";
   } else {
@@ -92,7 +93,7 @@ int deadtimeClassTest() {
 
   std::cout << "Merged Ranges:\n";
   for (const auto& r : manager.getMergedRanges()) {
-    std::cout << "[" << r.startTime << ", " << r.endTime << "]\n";
+    std::cout << "[" << r.start << ", " << r.end << "]\n";
   }
 
   return 0;

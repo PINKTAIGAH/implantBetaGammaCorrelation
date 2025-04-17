@@ -351,28 +351,27 @@ void eventwiseHists(const char* input, const char* output) {
   // Loop over all gated implants and fill map
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
     
-    // Make histogram strings
+    // Make histogram for Bplast channel multiplicity
     std::string gatedimplant_name = itr.first;
     std::string histogram_name = "aida_" + gatedimplant_name + "_implant_bplast_multiplicity";
     std::string histogram_title = "AIDA " + gatedimplant_name + " Implant Event - Bplast Channel Multiplicity (Upstream + Downstream)";
-
-    // Make histogram and fill map
     TH1F* h1_aida_gatedimplant_bplast_multiplicity = new TH1F(histogram_name.c_str(), histogram_title.c_str(), 140, 0, 140);
     h1_aida_gatedimplant_bplast_multiplicity_map.emplace(gatedimplant_name, h1_aida_gatedimplant_bplast_multiplicity);
 
-    // Make histogram strings
+    // Make histogram for gated impalnt vs bplas multiplicity
     histogram_name = "aida_" + gatedimplant_name + "energy_implant_bplast_multiplicity";
     histogram_title = "AIDA " + gatedimplant_name + " Implant Event Energy - Bplast Channel Multiplicity (Upstream + Downstream)";
-
     TH2F* h2_aida_gatedimplant_energy_bplast_multiplicity = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 7000/20, 0, 7000, 140, 0, 140);
     h2_aida_gatedimplant_energy_bplast_multiplicity_map.emplace(gatedimplant_name, h2_aida_gatedimplant_energy_bplast_multiplicity);
+
+    // Make histogram of energy distribution for each gated implant
   }
 
   // FRS histograms
   TH2F* h2_frs_z_z2 = new TH2F("frs_z_z2", "FRS Z vs Z2", 1000, 30, 50, 1000, 30, 50);
   TH2F* h2_frs_z_aoq = new TH2F("frs_z_aoq", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
-  TH2F* h2_frs_aoq_x4 = new TH2F("frs_aoq_x4", "FRS AoQ vs X4", 1000, 2.0, 2.5, 1000, -100, 100);
-  TH2F* h2_frs_dedeg_z = new TH2F("frs_dedeg_z", "FRS dEdeg vs Z", 1000, 40, 50, 1000, 58, 68);
+  TH2F* h2_frs_z_aoq_corr = new TH2F("frs_z_aoq_corr", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
+  TH2F* h2_frs_aoq_sx4 = new TH2F("frs_aoq_sx4", "FRS AoQ vs X4", 1000, -150, 150, 1000, 2.0, 2.5);
 
   // Decay Hits multiplicity
   TH1F* h1_aida_decay_multiplicity_allspill = new TH1F("aida_decay_multiplicity_allspill", "AIDA decay sub-event multiplicity per event (Allspill)", 50, 0, 50);
@@ -384,6 +383,12 @@ void eventwiseHists(const char* input, const char* output) {
   TH1F* h1_aida_decay_cluster_size_x =new TH1F("aida_decay_cluster_size_x", "AIDA Decay X Strip Cluster Size", 10, 0, 10);
   TH1F* h1_aida_decay_cluster_size_y =new TH1F("aida_decay_cluster_size_y", "AIDA Decay Y Strip Cluster Size", 10, 0, 10);
   TH1F* h1_aida_decay_cluster_size =new TH1F("aida_decay_cluster_size", "AIDA Decay Y Strip Cluster Size", 100, 0, 10);
+
+  // Plot Germanium spectra
+  TH1F* h1_germanium_spectra_all = new TH1F("germanium_spectra_all", "Gamma spectra (All summed)", 1500, 0, 1500);
+
+  // Plot Decay-Germanium coincidence
+  TH1F* h1_decay_germanium_dt = new TH1F("decay_germanium_dt", "AIDA Decay - DEGAS time difference", 50000, -100e3, 100e3);
 
   // *************************************************************************************
   // ****************************** LOOP OVER ALL EVENTS *********************************
@@ -433,17 +438,54 @@ void eventwiseHists(const char* input, const char* output) {
     // ****************************** LOOP OVER FRS  ************************************
     // *************************************************************************************
 
-    if(frshits>0){
+    // if(frshits>0){
 
-      // Loop over FRS hits
-      for(int j=0; j<frshits; j++){
+    //   // Loop over FRS hits
+    //   for(int j=0; j<frshits; j++){
         
-        h2_frs_z_z2->Fill(frs_z[j], frs_z2[j]);
-        h2_frs_z_aoq->Fill(frs_z[j], frs_aoq[j]);
-        h2_frs_aoq_x4->Fill(frs_aoq[j], frs_x4[j]);
-        h2_frs_dedeg_z->Fill(frs_z[j],frs_dedeg[j]);
+    //     h2_frs_z_z2->Fill(frs_z[j], frs_z2[j]);
+    //     h2_frs_z_aoq->Fill(frs_z[j], frs_aoq[j]);
+    //     h2_frs_aoq_x4->Fill(frs_aoq[j], frs_x4[j]);
+    //     h2_frs_dedeg_z->Fill(frs_z[j],frs_dedeg[j]);
 
-      } // End of FRS loop
+    //   } // End of FRS loop
+
+    // }
+
+    for ( const auto& FrsMultiItem : FrsMultiItem ){
+
+      // Define frs item vectors
+      std::vector<float> const& AoQ = FrsMultiItem.Get_ID_AoQ_s2s4_mhtdc();
+      std::vector<float> const& AoQ_CORR = FrsMultiItem.Get_ID_AoQ_corr_s2s4_mhtdc();
+      std::vector<float> const& Z41 = FrsMultiItem.Get_ID_z41_mhtdc();
+      std::vector<float> const& Z42 = FrsMultiItem.Get_ID_z42_mhtdc();
+      std::vector<float> const& S4X = FrsMultiItem.Get_ID_s4x_mhtdc();
+
+      // Loop over variables in each frs item vector
+      for ( int i = 0; i < AoQ.size(); i++ ){
+
+        if ( i >= AoQ.size() || i >= AoQ_CORR.size() || i >= Z41.size() || i >= Z42.size() || i >= S4X.size() ){ continue; }
+
+        // Get frs variables
+        double aoq = AoQ[i];
+        double aoq_corr = AoQ_CORR[i];
+        double z41 = Z41[i];
+        double z42 = Z42[i];
+        double s4x = S4X[i];
+
+        if ( aoq == -999. || aoq_corr == -999. || z41 == -999. || z42 == -999. || s4x == -000. ){ continue; }
+
+        //************* DEBUG **************
+        // std::cout << "[DEBUG] FRS data items --> AoQ: " << aoq << "   #####   AoQ_CORR: " << aoq_corr << "   #####   Z41: " << z41 << "   #####   Z42: " << z42 << "   #####   S4X: " << s4x << std::endl;
+        //************* DEBUG **************
+
+        // Fill histograms
+        h2_frs_z_z2->Fill(z41, z42);
+        h2_frs_z_aoq->Fill(aoq, z42);
+        h2_frs_z_aoq_corr->Fill(aoq_corr, z42);
+        h2_frs_aoq_sx4->Fill(s4x, aoq_corr);
+
+      }
 
     }
 
@@ -682,26 +724,59 @@ void eventwiseHists(const char* input, const char* output) {
     
 
     // *************************************************************************************
-    // ****************************** LOOP OVER GERMANIUMS EVENTS *******************************
+    // ****************************** LOOP OVER GERMANIUMS EVENTS **************************
     // *************************************************************************************
 
     
-    // std::set<int> germanium_filledtree{};
+    std::set<int> germanium_filledtree{};
     
-    // // Loop over decay subevents*/
-    // for (int j = 0; j < germaniumhits; j++){
+    // Loop over decay subevents*/
+    for (int j = 0; j < germaniumhits; j++){
     
-    //   if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
+      if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
     
-    //     if ( germanium_filledtree.count(j) == 0 ){
+        if ( germanium_filledtree.count(j) == 0 ){
+
+          h1_germanium_spectra_all->Fill(germanium_energy[j]);
+
+        }
     
-    //     }
+      germanium_filledtree.insert(j);
     
-    //   germanium_filledtree.insert(j);
+      }
     
-    //   }
-    
-    // }
+    }
+
+
+    // *************************************************************************************
+    // ****************************** DEGAS - AIDA DECAY COINCIDENCE ***********************
+    // *************************************************************************************
+
+    if (aidadecayhits > 0 && germaniumhits > 0 ){
+      
+      for (int i = 0; i < aidadecayhits; i++){
+
+        if ( decay_dssd[i]==1 && TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000 && TMath::Abs(decay_time_y[i]-decay_time_x[i])<1e3 && TMath::Abs(decay_energy_x[i]-decay_energy_x[i])<168 && decay_energy[i]>150 & decay_energy[i]<1000 ){
+
+          for (int j = 0; j < germaniumhits; j++){
+
+            if (germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
+
+              //************* DEBUG **************
+              // std::cout << "[DEBUG] decay_t - germ_t = " << (decay_time[i] - germanium_time[j])*1e-9 << " seconds  ####### decay_t - germ_abs_evt_t = " << (germanium_time[j] - germanium_abs_ev_time[j])*1e-9 << " seconds" << std::endl;
+              //************* DEBUG **************
+
+              h1_decay_germanium_dt->Fill(decay_time[i]-germanium_time[j]);
+
+            }
+
+          }
+
+        }
+
+      }
+      
+    }
 
 
     // *************************************************************************************
@@ -738,9 +813,9 @@ void eventwiseHists(const char* input, const char* output) {
   TDirectory* frsDir = outputFile->mkdir("frs");
   frsDir->cd();
   h2_frs_z_aoq->Write();
+  h2_frs_z_aoq_corr->Write();
   h2_frs_z_z2->Write();
-  h2_frs_aoq_x4->Write();
-  h2_frs_dedeg_z->Write();
+  h2_frs_aoq_sx4->Write();
   gFile->cd();
 
   // Write LEC dataitem All histograms
@@ -820,6 +895,10 @@ void eventwiseHists(const char* input, const char* output) {
   h1_aida_decay_cluster_size_x->Write();
   h1_aida_decay_cluster_size_y->Write();
   h1_aida_decay_cluster_size->Write();
+
+  // Write gamma plots
+  h1_germanium_spectra_all->Write();
+  h1_decay_germanium_dt->Write();
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************

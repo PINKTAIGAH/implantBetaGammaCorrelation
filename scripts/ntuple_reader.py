@@ -17,8 +17,8 @@ file = uproot.open(filename)
 dt = file['nt_aida_implant_beta_dt;1']["dt"].array(library="numpy") 
 
 time_scale = 1e9
-time_threshold = 100 * time_scale
-binwidth = 500e6
+time_threshold = 50 * time_scale
+binwidth = 200e6
 
 bin_number = int(2*time_threshold/binwidth)
 

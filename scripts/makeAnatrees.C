@@ -72,7 +72,7 @@ struct bplast_data{
   short id;
   double slow_tot;
   int sp;
-  /*int bp;*/
+  int bp;
 }bplast_data;
   
 struct germanium_data{
@@ -250,7 +250,8 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Double_t> implant_adc_energy(reader, "AidaImplantCalAdcData.energy");
   TTreeReaderArray<unsigned long long> implant_adc_time(reader, "AidaImplantCalAdcData.slowTime");
 
-  TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
+  TTreeReaderArray<u_int64_t> bplast_time(reader, "bPlastTwinpeaksCalData.fabsolute_event_time");
+  // TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ushort> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
   TTreeReaderArray<Double_t> bplast_slow_tot(reader, "bPlastTwinpeaksCalData.fslow_ToT");
 
@@ -311,9 +312,9 @@ void makeAnatrees(const char* input, const char* output) {
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
   germanium_tree->Branch("germanium", &germanium_data, "time/l:energy/D:sp/I");
 
-  /*// Create bplast tree and branches for anatree*/
-  /*TTree* bplast_tree = new TTree("bplast_tree", "New AIDA Analysis Tree");*/
-  /*bplast_tree->Branch("bplast", &bplast_data, "time/l:id/S:slow_tot/D:sp/I:bp/I");*/
+  // Create bplast tree and branches for anatree*/
+  TTree* bplast_tree = new TTree("bplast_tree", "New AIDA Analysis Tree");
+  bplast_tree->Branch("bplast", &bplast_data, "time/l:id/S:slow_tot/D:sp/I:bp/I");
 
   // Define a map to contain all the gated implant trees
   std::map<std::string, TTree*> gatedimplant_trees_map = {};
@@ -393,14 +394,14 @@ void makeAnatrees(const char* input, const char* output) {
           
     /*cout << bp1flag << "  " << bp2flag << "  " << bpflag << endl;*/
     
-    /*for(int j=0; j<bplasthits; j++){*/
-    /*  bplast_data.time = bplast_time[j];*/
-    /*  bplast_data.id = bplast_id[j];*/
-    /*  bplast_data.slow_tot = bplast_slow_tot[j];*/
-    /*  bplast_data.sp = spflag;*/
-    /*  bplast_data.bp = bpflag;*/
-    /*  bplast_tree->Fill();*/
-    /*}*/
+    for(int j=0; j<bplasthits; j++){
+      bplast_data.time = bplast_time[j];
+      bplast_data.id = bplast_id[j];
+      bplast_data.slow_tot = bplast_slow_tot[j];
+      bplast_data.sp = spflag;
+      bplast_data.bp = bpflag;
+      bplast_tree->Fill();
+    }
 
 
     // *************************************************************************************
@@ -576,7 +577,7 @@ void makeAnatrees(const char* input, const char* output) {
 
         if ( germanium_filledtree.count(j) == 0 ){
 
-          germanium_data.time = germanium_abs_ev_time[j];
+          germanium_data.time = germanium_time[j];
           germanium_data.energy = germanium_energy[j];
           germanium_data.sp = spflag;
 
