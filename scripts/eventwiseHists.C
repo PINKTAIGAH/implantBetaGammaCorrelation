@@ -11,7 +11,8 @@
 
 #include<TH1F.h>
 #include<TH2F.h>
-#include <TCutG.h>
+#include<TMath.h>
+#include<TCutG.h>
 #include<TFile.h>
 #include<TTree.h>
 #include<THStack.h>
@@ -21,6 +22,8 @@
 #include<TTreeReader.h>
 #include<TTreeReaderArray.h>
 #include<TTreeReaderValue.h>
+
+#include "../../../c4Root/c4data/frsData/FrsHitData.h"
 
 // *************************************************************************************
 // ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
@@ -348,6 +351,10 @@ void eventwiseHists(const char* input, const char* output) {
   std::map<std::string, TH1F*> h1_aida_gatedimplant_bplast_multiplicity_map = {};
   std::map<std::string, TH2F*> h2_aida_gatedimplant_energy_bplast_multiplicity_map = {};
   
+  // Gated implant position in s4 vs aida position
+  std::map<std::string, TH2F*> h2_aida_gatedimplant_s4x_vs_aidax_map = {};
+  std::map<std::string, TH2F*> h2_aida_gatedimplant_s4y_vs_aiday_map = {};
+  
   // Loop over all gated implants and fill map
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
     
@@ -359,19 +366,30 @@ void eventwiseHists(const char* input, const char* output) {
     h1_aida_gatedimplant_bplast_multiplicity_map.emplace(gatedimplant_name, h1_aida_gatedimplant_bplast_multiplicity);
 
     // Make histogram for gated impalnt vs bplas multiplicity
-    histogram_name = "aida_" + gatedimplant_name + "energy_implant_bplast_multiplicity";
+    histogram_name = "aida_" + gatedimplant_name + "_energy_implant_bplast_multiplicity";
     histogram_title = "AIDA " + gatedimplant_name + " Implant Event Energy - Bplast Channel Multiplicity (Upstream + Downstream)";
     TH2F* h2_aida_gatedimplant_energy_bplast_multiplicity = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 7000/20, 0, 7000, 140, 0, 140);
     h2_aida_gatedimplant_energy_bplast_multiplicity_map.emplace(gatedimplant_name, h2_aida_gatedimplant_energy_bplast_multiplicity);
 
-    // Make histogram of energy distribution for each gated implant
+    // Make histogram of s4 position vs aida position for each gated implant
+    histogram_name = "aida_" + gatedimplant_name + "_s4x_vs_aidax";
+    histogram_title = "AIDA " + gatedimplant_name + " Implant X Position @ S4 vs AIDA";
+    TH2F* h2_aida_gatedimplant_s4x_vs_aidax = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 1000, -150, 150, 384, 0, 384);
+    h2_aida_gatedimplant_s4x_vs_aidax_map.emplace(gatedimplant_name, h2_aida_gatedimplant_s4x_vs_aidax);
+
+    // Make histogram of s4 position vs aida position for each gated implant
+    histogram_name = "aida_" + gatedimplant_name + "_s4y_vs_aiday";
+    histogram_title = "AIDA " + gatedimplant_name + " Implant Y Position @ S4 vs AIDA";
+    TH2F* h2_aida_gatedimplant_s4y_vs_aiday = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 1000, -100, 100, 128, 0, 128);
+    h2_aida_gatedimplant_s4y_vs_aiday_map.emplace(gatedimplant_name, h2_aida_gatedimplant_s4y_vs_aiday);
+
   }
 
   // FRS histograms
   TH2F* h2_frs_z_z2 = new TH2F("frs_z_z2", "FRS Z vs Z2", 1000, 30, 50, 1000, 30, 50);
   TH2F* h2_frs_z_aoq = new TH2F("frs_z_aoq", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
   TH2F* h2_frs_z_aoq_corr = new TH2F("frs_z_aoq_corr", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
-  TH2F* h2_frs_aoq_sx4 = new TH2F("frs_aoq_sx4", "FRS AoQ vs X4", 1000, -150, 150, 1000, 2.0, 2.5);
+  TH2F* h2_frs_aoq_sx4 = new TH2F("frs_aoq_sx4", "FRS AoQ vs X4", 1000, -150, 150, 1000, 1.8, 2.5);
 
   // Decay Hits multiplicity
   TH1F* h1_aida_decay_multiplicity_allspill = new TH1F("aida_decay_multiplicity_allspill", "AIDA decay sub-event multiplicity per event (Allspill)", 50, 0, 50);
@@ -565,11 +583,12 @@ void eventwiseHists(const char* input, const char* output) {
     if (aidaimphits > 0) {
       
       // Loop over all FrsMHTDC dataitems
-      for (auto const& FrsMultiItem : FrsMultiItem) {
+      for (auto const& frs_multi_item : FrsMultiItem) {
 
-        std::vector<float> const& AoQ = FrsMultiItem.Get_ID_AoQ_corr_s2s4_mhtdc();
-        std::vector<float> const& Z = FrsMultiItem.Get_ID_z41_mhtdc();
-        std::vector<float> const& Z2 = FrsMultiItem.Get_ID_z42_mhtdc();
+        std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
+        std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
+        std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
+        std::vector<float> const& S4X = frs_multi_item.Get_ID_s4x_mhtdc();
         
         //  Skip frs subevents where implant index wouldbe out of bounds
         for(int i =0; i<AoQ.size(); i++){
@@ -578,7 +597,8 @@ void eventwiseHists(const char* input, const char* output) {
           // Get FRS variables
           double aoq = AoQ[i];
           double z = Z[i];
-          double z2 = Z[i];
+          double z2 = Z2[i];
+          double s4x = S4X[i];
 
           // Loop over all gatedimplant isotopes
           for (auto gimp_itr : gatedimplant_cuts_map){
@@ -601,6 +621,9 @@ void eventwiseHists(const char* input, const char* output) {
                   // Fill bplast channel multiplicity vs implant energy
                   h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_upstream_channel_multiplicity); // Upstream
                   h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_downstream_channel_multiplicity + 70); // Downstream
+
+                  // Fill s4 position vs aida posiiton
+                  h2_aida_gatedimplant_s4x_vs_aidax_map[gimp_key]->Fill(s4x, implant_x[j]);
 
                   gatedimplant_counter_map[gimp_key]++; // Increase counter
 
@@ -881,6 +904,16 @@ void eventwiseHists(const char* input, const char* output) {
   for (auto itr : h2_aida_gatedimplant_energy_bplast_multiplicity_map){
     itr.second->Write();
   }
+
+  // Write implant x s4 pos vs aida pos 
+  for (auto itr : h2_aida_gatedimplant_s4x_vs_aidax_map){
+    itr.second->Write();
+  }
+
+  // // Write implant y s4 pos vs aida pos 
+  // for (auto itr : h2_aida_gatedimplant_s4y_vs_aiday_map){
+  //   itr.second->Write();
+  // }
 
   // Write decay event multiplicity
   h1_aida_decay_multiplicity_allspill->Write();

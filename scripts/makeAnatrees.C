@@ -11,6 +11,8 @@
 #include <TTreeReaderArray.h>
 #include <TTreeReaderValue.h>
 
+#include "../../../c4Root/c4data/frsData/FrsHitData.h"
+
 // *************************************************************************************
 // ****************************** DEFINE SCRIPT CONSTANTS ****************************** 
 // *************************************************************************************
@@ -60,8 +62,6 @@ struct decay_data{
   double energy;
   double energy_x;
   double energy_y;
-  int clustersize_x;
-  int clustersize_y;
   int dssd;
   int sp;
   int bp;
@@ -86,7 +86,6 @@ struct germanium_data{
 // *************************************************************************************
 // ****************************** DEFINE FUNCTIONS *************************************
 // *************************************************************************************
-
 
 std::tuple< std::vector<int>, std::vector<int> > loadBrokenStrips(){
   // Read in broken strips for both upstream and downstream DSSSD which are to be skipped 
@@ -302,19 +301,22 @@ void makeAnatrees(const char* input, const char* output) {
   
   // Create implant tree and branches for anatree
   TTree* implant_tree = new TTree("aida_implant_tree", "New AIDA Analysis Tree");
+  implant_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
   implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
 
   // Create decay tree and branches for anatree
   TTree* decay_tree = new TTree("aida_decay_tree", "New AIDA Analysis Tree");
-  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/I:cl_x/I:cl_y/D:dssd/I:sp/I:bp/I");
+  decay_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
+  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/D:dssd/I:sp/I:bp/I");
 
   // Create germanium tree and branches for anatree
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
+  germanium_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
   germanium_tree->Branch("germanium", &germanium_data, "time/l:energy/D:sp/I");
 
   // Create bplast tree and branches for anatree*/
-  TTree* bplast_tree = new TTree("bplast_tree", "New AIDA Analysis Tree");
-  bplast_tree->Branch("bplast", &bplast_data, "time/l:id/S:slow_tot/D:sp/I:bp/I");
+  // TTree* bplast_tree = new TTree("bplast_tree", "New AIDA Analysis Tree");
+  // bplast_tree->Branch("bplast", &bplast_data, "time/l:id/S:slow_tot/D:sp/I:bp/I");
 
   // Define a map to contain all the gated implant trees
   std::map<std::string, TTree*> gatedimplant_trees_map = {};
@@ -331,6 +333,7 @@ void makeAnatrees(const char* input, const char* output) {
 
     // Create tree and define branch structure
     TTree* gatedimplant_tree = new TTree(tree_name.c_str(), "New AIDA Analysis Tree");
+    gatedimplant_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
     gatedimplant_tree->Branch(branch_name.c_str(), &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
 
     // Add tree to set
@@ -343,7 +346,6 @@ void makeAnatrees(const char* input, const char* output) {
 
   const char spinner[] = {'-', '\\', '|', '/'};
   int totalEntries = reader.GetEntries(true);
-
 
   // Loop over all entries in the old tree
   while (reader.Next()) {
@@ -394,14 +396,14 @@ void makeAnatrees(const char* input, const char* output) {
           
     /*cout << bp1flag << "  " << bp2flag << "  " << bpflag << endl;*/
     
-    for(int j=0; j<bplasthits; j++){
-      bplast_data.time = bplast_time[j];
-      bplast_data.id = bplast_id[j];
-      bplast_data.slow_tot = bplast_slow_tot[j];
-      bplast_data.sp = spflag;
-      bplast_data.bp = bpflag;
-      bplast_tree->Fill();
-    }
+    // for(int j=0; j<bplasthits; j++){
+    //   bplast_data.time = bplast_time[j];
+    //   bplast_data.id = bplast_id[j];
+    //   bplast_data.slow_tot = bplast_slow_tot[j];
+    //   bplast_data.sp = spflag;
+    //   bplast_data.bp = bpflag;
+    //   bplast_tree->Fill();
+    // }
 
 
     // *************************************************************************************
@@ -460,11 +462,11 @@ void makeAnatrees(const char* input, const char* output) {
     if (aidaimphits > 0) {
       
       // Loop over all FrsMHTDC dataitems
-      for (auto const& FrsMultiItem : FrsMultiItem) {
+      for (auto const& frs_multi_item : FrsMultiItem) {
 
-        std::vector<float> const& AoQ = FrsMultiItem.Get_ID_AoQ_corr_s2s4_mhtdc();
-        std::vector<float> const& Z = FrsMultiItem.Get_ID_z41_mhtdc();
-        std::vector<float> const& Z2 = FrsMultiItem.Get_ID_z42_mhtdc();
+        std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
+        std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
+        std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
         
         //  Skip frs subevents where implant index wouldbe out of bounds
         for(int i =0; i<AoQ.size(); i++){
@@ -473,7 +475,7 @@ void makeAnatrees(const char* input, const char* output) {
           // Get FRS variables
           double aoq = AoQ[i];
           double z = Z[i];
-          double z2 = Z[i];
+          double z2 = Z2[i];
 
           // Loop over all gatedimplant isotopes
           for (auto gimp_itr : gatedimplant_cuts_map){
@@ -540,6 +542,13 @@ void makeAnatrees(const char* input, const char* output) {
 
           if (aidadecay_filledtree.count(i) == 0) {
 
+            // ####### DEBUG ###### 
+            // std::cout << "[DEBUG] Decay time: " << decay_time[i] << " ### Decay time X: " << decay_time_x[i] << " ### Decay time Y: " << decay_time_y[i] << 
+            //   " ### Decay Strip X: " << decay_x[i] << " ### Decay Y: " << decay_y[i] << " ### Decay Energy: " << decay_energy[i] << " ### Decay Energy X: " << 
+            //   decay_energy_x[i] << " ### Decay Energy Y: " << decay_energy_y[i] << " ### Decay DSSD: " << decay_dssd[i] << " ### SP: " << spflag << 
+            //   " ### BP: " << spflag << std::endl << std::endl;
+            // ####### DEBUG ###### 
+
             aida_decay_data.time = decay_time[i];
             aida_decay_data.time_x = decay_time_x[i];
             aida_decay_data.time_y = decay_time_y[i];
@@ -548,8 +557,6 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.energy = decay_energy[i];
             aida_decay_data.energy_x = decay_energy_x[i];
             aida_decay_data.energy_y = decay_energy_y[i];
-            aida_decay_data.clustersize_x = decay_cluster_size_x[i];
-            aida_decay_data.clustersize_y = decay_cluster_size_y[i];
             aida_decay_data.dssd = decay_dssd[i];
             aida_decay_data.sp = spflag;
             aida_decay_data.bp = bpflag;
@@ -564,7 +571,7 @@ void makeAnatrees(const char* input, const char* output) {
     }
 
     // *************************************************************************************
-    // ****************************** LOOP OVER DECAY EVENTS *******************************
+    // ****************************** LOOP OVER GERMANIUM EVENTS *******************************
     // *************************************************************************************
 
     
@@ -607,7 +614,6 @@ void makeAnatrees(const char* input, const char* output) {
 
   std::cout << std::endl;
 
-  
   // *************************************************************************************
   // ****************************** PRINT STATISTICS *************************************
   // *************************************************************************************
@@ -625,9 +631,12 @@ void makeAnatrees(const char* input, const char* output) {
   // *************************************************************************************
 
   std::cout << "Writing trees ..." << std::endl;
+  outputFile->cd();
   
   implant_tree->Write();
+  std::cout << "Before creation: decay_tree->GetDirectory() = " << decay_tree->GetDirectory() << std::endl;
   decay_tree->Write();
+  std::cout << "After creation: decay_tree->GetDirectory() = " << decay_tree->GetDirectory() << std::endl;
   germanium_tree->Write();
   
   // Loop over trees and Write
@@ -637,15 +646,58 @@ void makeAnatrees(const char* input, const char* output) {
     itr.second->Write();
   }
 
-  std::cout << "Trees were written succesfully!" << std::endl << std::endl;
+  std::cout << "Finished writing trees successfully!" << std::endl << std::endl;
+
+
+  // *************************************************************************************
+  // ****************************** DEBUG DIAGNOSTIC *************************************
+  // *************************************************************************************
+
+  // std::cout << "Trees were written succesfully!" << std::endl << std::endl;
+
+  std::cout << "\n--- DIAGNOSTIC CHECK ---" << std::endl;
+
+  // Check tree entry counts
+  std::cout << "implant_tree entries: " << implant_tree->GetEntries() << std::endl;
+  std::cout << "decay_tree entries: " << decay_tree->GetEntries() << std::endl;
+  std::cout << "germanium_tree entries: " << germanium_tree->GetEntries() << std::endl;
+
+  for (auto& [name, tree] : gatedimplant_trees_map) {
+      std::cout << "Gated implant tree [" << name << "] entries: " << tree->GetEntries() << std::endl;
+  }
+
+  // Check directories
+  std::cout << "\nTree directory check:" << std::endl;
+  std::cout << "implant_tree dir: " << (implant_tree->GetDirectory() ? implant_tree->GetDirectory()->GetName() : "null") << std::endl;
+  std::cout << "decay_tree dir: " << (decay_tree->GetDirectory() ? decay_tree->GetDirectory()->GetName() : "null") << std::endl;
+  std::cout << "germanium_tree dir: " << (germanium_tree->GetDirectory() ? germanium_tree->GetDirectory()->GetName() : "null") << std::endl;
+
+  for (auto& [name, tree] : gatedimplant_trees_map) {
+      std::cout << "Gated implant tree [" << name << "] dir: " << (tree->GetDirectory() ? tree->GetDirectory()->GetName() : "null") << std::endl;
+  }
+
+  // File state
+  std::cout << "\nOutput file check:" << std::endl;
+  std::cout << "Output file name: " << outputFile->GetName() << std::endl;
+  std::cout << "Is file open? " << (outputFile->IsOpen() ? "yes" : "no") << std::endl;
+
+  // File contents
+  std::cout << "\nOutput file contents before Write(): " << std::endl;
+  outputFile->cd();
+  outputFile->ls();
+ 
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************
   // *************************************************************************************
 
-  // Close the file
+  // Close the input file
   file->Close();
+
+  // CLose and write the output file
   outputFile->Close();
+  
+  // Delete pointer objects
   delete file;
   delete outputFile;
 }
