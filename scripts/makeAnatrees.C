@@ -582,7 +582,7 @@ void makeAnatrees(const char* input, const char* output) {
     // Loop over decay subevents
     for (int j = 0; j < germaniumhits; j++){
 
-      if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 0 ){
+      if ( germanium_det[j] <= constants::TOTAL_GERMANIUM_DETECTORS && germanium_cry[j] <= constants::TOTAL_GERMANIUM_CRYSTALS && germanium_energy[j] > 20. ){
 
         if ( germanium_filledtree.count(j) == 0 ){
 

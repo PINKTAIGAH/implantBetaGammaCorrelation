@@ -16,7 +16,7 @@ sbatch -J subsystemCoincidence \
 --mem-per-cpu=8G \
 --array=1-$NFILES \
 -o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/subsystemCoincidence_%A_%a.out.log \
--e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/subsystemCoincidence_%A_%e.err.log \
+-e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/subsystemCoincidence_%A_%a.err.log \
 -- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/launchers/subsystemCoincidence_launcher.sh
 
 unset size

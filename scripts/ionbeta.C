@@ -43,7 +43,8 @@ namespace constants{
   const int BETA_CANDIDATE_CUT = 1; // Define number of candidate betas a implant must have before plotting
 
   // const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { 13229, 17991 };
-  const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -20000, 20000 };
+  const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -18200, -12900 };
+  // const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -0, 5000 };
 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
   const int64_t IMPDECAY_TIME_BINS = 2*TIME_THRESHOLD/TIME_PER_DT_BIN;
@@ -291,7 +292,8 @@ void ionbeta(const char* input, const char* output){
   TH1F* h1_implantbeta_candidate_multiplicity_backwards = new TH1F("implantbeta_candidate_multiplicity_backwards", "Implant-Decay Backwards Candidate Multiplicity; Candidate Multiplicity; Counts", 100, 0, 100);
 
   // Histograms for gamma correlated events
-  TH1F* h1_implantbetagamma_spectrum_before_ionbeta = new TH1F("implantbetagamma_spectrum_before_ionbeta", "Implant-Beta-Gamma Energy Spectrum (all); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH1F* h1_implantbetagamma_spectrum_before_ionbeta = new TH1F("implantbetagamma_spectrum_before_ionbeta", "Beta-Gamma Energy Spectrum (all); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH1F* h1_implantbetagamma_spectrum_dt = new TH1F("implantbetagamma_spectrum_dt", "Decay Germanium dt; Time (ns); Counts", 20000, -20000, 2000);
   TH1F* h1_implantbetagamma_spectrum_after_ionbeta = new TH1F("implantbetagamma_spectrum_after_ionbeta", "Implant-Beta-Gamma Energy Spectrum (ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
 
   // Correlate forward implant-decay dt with other observables
@@ -372,8 +374,7 @@ void ionbeta(const char* input, const char* output){
   std::cout << "Finished filling the implant map" << std::endl;
   std::cout << "Number of All implant events cut on region: " << all_implants_map.size() << std::endl << std::endl;
 
-  //************* DEBUG **************
-  // std::cout << "[DEBUG] Printing deadtime ranges in the manager:\n";
+  //************* DEBUG ************** // std::cout << "[DEBUG] Printing deadtime ranges in the manager:\n";
   // for (const auto& r : deadtimeWindowManager.getMergedRanges()) {
   //   std::cout << "[" << r.start << ", " << r.end << "]\n";
   // }
@@ -840,7 +841,7 @@ void ionbeta(const char* input, const char* output){
         int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
         // int64_t time_diff = germanium_evt->first - last_matched_decay_time; // Like regular people
 
-        if ( time_diff > constants::PROMPT_GAMMA_WINDOW.second ){ break; }
+        if ( time_diff > 50e3 ){ break; }
 
         // Check if germanium event is within prompt window
         if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
@@ -893,8 +894,9 @@ void ionbeta(const char* input, const char* output){
 
       int64_t time_diff = -( decay_time - germanium_evt->first ); // Reverse like in jeroens code
       // int64_t time_diff = germanium_evt->first - decay_time; // Like regular people
+      h1_implantbetagamma_spectrum_dt->Fill(time_diff);
 
-      if ( time_diff > constants::PROMPT_GAMMA_WINDOW.second ){ break; }
+      if ( time_diff > 50e3 ){ break; }
 
       // Check if germanium event is within prompt window
       if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
@@ -1001,6 +1003,7 @@ void ionbeta(const char* input, const char* output){
   gammaCoincidences->cd();
   h1_implantbetagamma_spectrum_before_ionbeta->Write();
   h1_implantbetagamma_spectrum_after_ionbeta->Write();
+  h1_implantbetagamma_spectrum_dt->Write();
   gFile->cd();
   
   

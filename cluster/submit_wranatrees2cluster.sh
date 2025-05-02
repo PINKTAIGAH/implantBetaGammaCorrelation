@@ -16,7 +16,7 @@ sbatch -J s101_wr_anatrees \
 --mem-per-cpu=8G \
 --array=1-$NFILES \
 -o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/wranatrees_%A_%a.out.log \
--e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/wranatrees_%A_%e.err.log \
+-e /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/wranatrees_%A_%a.err.log \
 -- /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/launchers/wranatree_launcher.sh
 
 unset size
