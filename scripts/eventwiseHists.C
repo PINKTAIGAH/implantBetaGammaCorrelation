@@ -38,10 +38,10 @@ namespace constants{
   const int TOTAL_FEES = 16; // Number of FEES in AIDA DAQ
 
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
-    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82Nb.root"},
-    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Nb.root"},
-    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Mo.root"},
-    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root"}
+    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
+    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
+    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
+    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"}
   };
 
   const int DSSD = 1;

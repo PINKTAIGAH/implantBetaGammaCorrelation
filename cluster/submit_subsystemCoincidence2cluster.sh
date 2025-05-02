@@ -12,7 +12,7 @@ done < "$LISTFILE"
 echo "Making trees from " $NFILES " lmd files."
 
 sbatch -J subsystemCoincidence \
---cpus-per-task=2 \
+--cpus-per-task=16 \
 --mem-per-cpu=8G \
 --array=1-$NFILES \
 -o /lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/cluster/logs/subsystemCoincidence_%A_%a.out.log \

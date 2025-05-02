@@ -117,11 +117,13 @@ void makeWrAnatrees(const char* input, const char* output) {
 
   TTreeReaderArray<ULong_t> bplast_time(reader, "bPlastTwinpeaksCalData.fwr_t");
   TTreeReaderArray<ULong_t> bplast_abs_evt_time(reader, "bPlastTwinpeaksCalData.fabsolute_event_time");
+  TTreeReaderArray<UShort_t> bplast_id(reader, "bPlastTwinpeaksCalData.fdetector_id");
 
   TTreeReaderArray<ULong_t> germanium_time(reader, "GermaniumCalData.fwr_t");
   TTreeReaderArray<Long_t> germanium_abs_evt_time(reader, "GermaniumCalData.fabsolute_event_time");
   TTreeReaderArray<UInt_t> germanium_det(reader, "GermaniumCalData.fdetector_id");
   TTreeReaderArray<UInt_t> germanium_cry(reader, "GermaniumCalData.fcrystal_id");
+  TTreeReaderArray<Double_t> germanium_energy(reader, "GermaniumCalData.fchannel_energy");
 
   TTreeReaderArray<FrsMultiHitItem> FrsMultiItem(reader, "FrsMultiHitData");
   TTreeReaderArray<FrsHitItem> FrsItem(reader, "FrsHitData");
@@ -249,6 +251,8 @@ void makeWrAnatrees(const char* input, const char* output) {
     if ( bplasthits > 0 ){
       for(int j=0; j<bplasthits; j++){
 
+        if ( bplast_id[j] > 64 ) { continue; }
+
         bplast_data.time_wr = bplast_time[j];
         bplast_data.time_abs_evt = bplast_abs_evt_time[j];
         bplast_tree->Fill();
@@ -270,6 +274,7 @@ void makeWrAnatrees(const char* input, const char* output) {
 
         if ( germanium_det[j] > constants::TOTAL_GERMANIUM_DETECTORS ){ continue; }
         if ( germanium_cry[j] > constants::TOTAL_GERMANIUM_CRYSTALS ){ continue; } 
+        if ( germanium_energy[j] <= 25. ){ continue; } 
         if ( germanium_filledtree.count(j) != 0 ){ continue; }
 
         germanium_data.time_wr = germanium_time[j];
@@ -290,6 +295,9 @@ void makeWrAnatrees(const char* input, const char* output) {
     for (auto const& frs_item : FrsItem) {
 
       Long64_t time_wr = frs_item.Get_wr_t();
+      Float_t z41 = frs_item.Get_ID_z41();
+
+      if ( z41 == 0.0) { continue; }
 
       frs_data.time_wr = time_wr;
       frs_data.placeholder = 0;

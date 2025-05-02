@@ -27,10 +27,10 @@ namespace constants{
   const int TOTAL_GERMANIUM_CRYSTALS = 2; // Number of germanium crystals
 
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
-    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82Nb.root"},
-    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Nb.root"},
-    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84Mo.root"},
-    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85Mo.root"}
+    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
+    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
+    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
+    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"}
   };
 
 }
@@ -203,11 +203,11 @@ void makeAnatrees(const char* input, const char* output) {
     std::string gate_name = itr.first; // Get gate name
 
     // Extract TCutG objects from gates
-    TCutG *zaoq_cut = (TCutG*)gate_file->Get("cut_Z_AoQ");
+    TCutG *x4aoq_cut = (TCutG*)gate_file->Get("cut_x4_AoQ");
     TCutG *zz2_cut = (TCutG*)gate_file->Get("cut_Z_Z2");
     
     // Add gate information to multimap
-    gatedimplant_cuts_map.emplace( gate_name, std::make_tuple(zaoq_cut, zz2_cut) );   
+    gatedimplant_cuts_map.emplace( gate_name, std::make_tuple(x4aoq_cut, zz2_cut) );   
   }
 
   // Create a map which will hold the counters for each gated implant species
@@ -467,24 +467,26 @@ void makeAnatrees(const char* input, const char* output) {
         std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
         std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
         std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
+        std::vector<float> const& X4 = frs_multi_item.Get_ID_s4x_mhtdc();
         
         //  Skip frs subevents where implant index wouldbe out of bounds
         for(int i =0; i<AoQ.size(); i++){
-          if (i >= AoQ.size() || i >= Z.size()) { continue; }
+          if ( i >= Z.size() || i >= Z2.size() || i >= X4.size() ) { continue; }
 
           // Get FRS variables
-          double aoq = AoQ[i];
-          double z = Z[i];
-          double z2 = Z2[i];
+          float aoq = AoQ[i];
+          float z = Z[i];
+          float z2 = Z2[i];
+          float x4 = X4[i];
 
           // Loop over all gatedimplant isotopes
           for (auto gimp_itr : gatedimplant_cuts_map){
             
             // Unpack entries inside map 
             std::string gimp_key = gimp_itr.first;
-            auto [zaoq_cut, zz2_cut] = gimp_itr.second;
+            auto [x4aoq_cut, zz2_cut] = gimp_itr.second;
             
-            if( zaoq_cut->IsInside(aoq, z) && zz2_cut->IsInside(z, z2) ){
+            if( x4aoq_cut->IsInside(aoq, x4) && zz2_cut->IsInside(z, z2) ){
 
               for (int j = 0; j < aidaimphits; j++){
 
@@ -647,45 +649,6 @@ void makeAnatrees(const char* input, const char* output) {
   }
 
   std::cout << "Finished writing trees successfully!" << std::endl << std::endl;
-
-
-  // *************************************************************************************
-  // ****************************** DEBUG DIAGNOSTIC *************************************
-  // *************************************************************************************
-
-  // std::cout << "Trees were written succesfully!" << std::endl << std::endl;
-
-  std::cout << "\n--- DIAGNOSTIC CHECK ---" << std::endl;
-
-  // Check tree entry counts
-  std::cout << "implant_tree entries: " << implant_tree->GetEntries() << std::endl;
-  std::cout << "decay_tree entries: " << decay_tree->GetEntries() << std::endl;
-  std::cout << "germanium_tree entries: " << germanium_tree->GetEntries() << std::endl;
-
-  for (auto& [name, tree] : gatedimplant_trees_map) {
-      std::cout << "Gated implant tree [" << name << "] entries: " << tree->GetEntries() << std::endl;
-  }
-
-  // Check directories
-  std::cout << "\nTree directory check:" << std::endl;
-  std::cout << "implant_tree dir: " << (implant_tree->GetDirectory() ? implant_tree->GetDirectory()->GetName() : "null") << std::endl;
-  std::cout << "decay_tree dir: " << (decay_tree->GetDirectory() ? decay_tree->GetDirectory()->GetName() : "null") << std::endl;
-  std::cout << "germanium_tree dir: " << (germanium_tree->GetDirectory() ? germanium_tree->GetDirectory()->GetName() : "null") << std::endl;
-
-  for (auto& [name, tree] : gatedimplant_trees_map) {
-      std::cout << "Gated implant tree [" << name << "] dir: " << (tree->GetDirectory() ? tree->GetDirectory()->GetName() : "null") << std::endl;
-  }
-
-  // File state
-  std::cout << "\nOutput file check:" << std::endl;
-  std::cout << "Output file name: " << outputFile->GetName() << std::endl;
-  std::cout << "Is file open? " << (outputFile->IsOpen() ? "yes" : "no") << std::endl;
-
-  // File contents
-  std::cout << "\nOutput file contents before Write(): " << std::endl;
-  outputFile->cd();
-  outputFile->ls();
- 
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************

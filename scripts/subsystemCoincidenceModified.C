@@ -7,6 +7,8 @@
 #include<utility>
 #include<string>
 #include<vector>
+#include<thread>
+#include<mutex>
 #include<algorithm>
 
 #include<TF1.h>
@@ -29,6 +31,14 @@
 namespace constants{
 
   const int DSSD = 1; // Which DSSD will the analysis be run on
+  const int N_THREADS_HPC = std::thread::hardware_concurrency(); // For HPC
+  // const int N_THREADS_HPC = 1; // For HPC
+  const int N_THREADS_VIRGO = 16; // For Virgo
+  
+  const bool IMPLANT_COINCIDENCE = true;
+  const bool DECAY_COINCIDENCE = true;
+
+  const ULong64_t TIME_COINCIDENCE_WINDOW = 10e6;
 
 }
 
@@ -69,6 +79,55 @@ struct FebexSubsystemTime{
 // ****************************** DEFINE FUNCTIONS *************************************
 // *************************************************************************************
 
+// Function to process the implant coincidencs in individual threads
+void processImplantRange(
+  std::set<ULong64_t>::iterator start,
+  std::set<ULong64_t>::iterator end,
+  const std::set<ULong64_t>& decayTimeSet,
+  const std::set<ULong64_t>& frsTimeSet,
+  const std::set<FebexSubsystemTime>& bplastTimeSet,
+  std::vector<TH1F*>& threadLocalHistosVector
+){
+  // Loop over the thread dedicated chunk implant time set
+  for ( auto itr=start; itr!=end; ++itr){
+
+    // Provide name to itr
+    auto implantTimeWr = *itr;
+
+    // Define Lower & upper bound keys for this implant wr time
+    FebexSubsystemTime febexLowerBoundKey{implantTimeWr - constants::TIME_COINCIDENCE_WINDOW, implantTimeWr - constants::TIME_COINCIDENCE_WINDOW};
+    FebexSubsystemTime febexUpperBoundKey{implantTimeWr + constants::TIME_COINCIDENCE_WINDOW, implantTimeWr - constants::TIME_COINCIDENCE_WINDOW};
+
+    // Fill the Implant time spectrum
+    threadLocalHistosVector[0]->Fill(implantTimeWr);
+
+    // MAKE IMPLANT DECAY COINCIDENCES
+    for ( auto decayWrTime : decayTimeSet ){
+      // Fill coincidence time spectra
+      threadLocalHistosVector[1]->Fill(  decayWrTime - implantTimeWr );
+    }
+
+    // MAKE IMPLANT FRS COINCIDENCES
+    for ( auto& frsTimeWr : frsTimeSet ){
+      // Fill coincidence time spectra
+      ULong64_t dt = frsTimeWr - implantTimeWr;
+      // std::cout << "Implant: " << implantTimeWr << ", FRS: " << frsTimeWr<< ", dt: " << dt << std::endl;
+      if (dt<0) {
+        std::cout << "Implant: " << implantTimeWr << ", FRS: " << frsTimeWr<< ", dt: " << dt << std::endl;
+      }
+      threadLocalHistosVector[2]->Fill( dt );
+    }
+
+    // MAKE IMPLANT BPLAST COINCIDENCES
+    const auto& bplastLowerBound = bplastTimeSet.lower_bound(febexLowerBoundKey);
+    const auto& bplastUpperBound = bplastTimeSet.upper_bound(febexUpperBoundKey);
+    for ( auto bplastTimeStruct = bplastLowerBound; bplastTimeStruct!=bplastUpperBound; bplastTimeStruct++ ){
+      // Fill coincidence time spectra
+      threadLocalHistosVector[3]->Fill( bplastTimeStruct->time_wr - implantTimeWr );
+      threadLocalHistosVector[4]->Fill( bplastTimeStruct->time_abs_evt - implantTimeWr );
+    }
+  }
+}
 
 // *************************************************************************************
 // ****************************** DEFINE CLASSES ***************************************
@@ -80,9 +139,9 @@ struct FebexSubsystemTime{
 // *************************************************************************************
 
 // Sets to hold times from wr anatrees
-std::set<WrSubsystemTime> implantTimeSet;
-std::set<WrSubsystemTime> decayTimeSet;
-std::set<WrSubsystemTime> frsTimeSet;
+std::set<ULong64_t> implantTimeSet;
+std::set<ULong64_t> decayTimeSet;
+std::set<ULong64_t> frsTimeSet;
 std::set<FebexSubsystemTime> bplastTimeSet;
 std::set<FebexSubsystemTime> germaniumTimeSet;
 
@@ -90,7 +149,18 @@ std::set<FebexSubsystemTime> germaniumTimeSet;
 // ****************************** START MACRO ******************************************
 // *************************************************************************************
 
-void subsystemCoincidence_bak(const char* input, const char* output){
+void subsystemCoincidenceModified(const char* input, const char* output, const bool runningOnCluster=false){
+
+  // *************************************************************************************
+  // ****************************** DETERMINE NUMBER OF THREADS **************************
+  // *************************************************************************************
+
+  // Determine threads depending on where you are running
+  int nThreads = (runningOnCluster) ? constants::N_THREADS_VIRGO : constants::N_THREADS_HPC;
+
+  // Print out number of threads available
+  std::cout << std::endl << "[DEBUG] Running on: " << ( runningOnCluster ? "VIRGO" : "HPC" ) << std::endl;
+  std::cout << "[DEBUG] Number of threads available: " << nThreads << std::endl << std::endl;
 
   // *************************************************************************************
   // ****************************** OPEN & CREATE FILES **********************************
@@ -173,27 +243,27 @@ void subsystemCoincidence_bak(const char* input, const char* output){
   TH1F* h1GermaniumWrTimeSpectrum = new TH1F("h1_germanium_wrtime_spectrum", "AIDA Germanium WR Time Spectrum;time;Counts", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1GermaniumAbsEvtTimeSpectrum = new TH1F("h1_germanium_absevttime_spectrum", "AIDA Germanium Abs Evt Time Spectrum;time;Counts", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
 
+  // IMPLANT COINCIDENCES
   // Implant-Decay Coincidence
-  TH1F* h1ImplantDecayCoincidenceTime = new TH1F("h1_implant_decay_coincidence", "AIDA Implant Decay Time Spectrum;dt (ns); Counts", 500/20, 0, 500e3);
-
+  TH1F* h1ImplantDecayCoincidenceTime = new TH1F("h1_implant_decay_coincidence", "AIDA Implant Decay Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
   // Implant-FRS Coincidence
-  TH1F* h1ImplantFrsCoincidenceTime = new TH1F("h1_implant_frs_coincidence", "AIDA Implant FRS Time Spectrum;dt (ns); Counts", 5000, 0, 10e9);
-  
+  TH1F* h1ImplantFrsCoincidenceTime = new TH1F("h1_implant_frs_coincidence", "AIDA Implant FRS Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
   // Implant-Bplast Coinicdence 
-  TH1F* h1ImplantBplastCoincidenceWrTime = new TH1F("h1_implant_bplast_wrtime_coincidence", "AIDA Decay bPlast Wr Time Spectrum;dt (ns); Counts", 5000, 0, 100e6);
-  TH1F* h1ImplantBplastCoincidenceAbsEvtTime = new TH1F("h1_implant_bplast_absevttime_coincidence", "AIDA Decay Bplast Abs Evt Time Spectrum;dt (ns); Counts", 5000, 0, 100e6);
+  TH1F* h1ImplantBplastCoincidenceWrTime = new TH1F("h1_implant_bplast_wrtime_coincidence", "AIDA Decay bPlast Wr Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
+  TH1F* h1ImplantBplastCoincidenceAbsEvtTime = new TH1F("h1_implant_bplast_absevttime_coincidence", "AIDA Decay Bplast Abs Evt Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
   
+  // DECAY COINCIDENCES
   // Decay-Germanium Coincidence
-  TH1F* h1DecayGermaniumCoincidenceWrTime = new TH1F("h1_decay_germanium_wrtime_coincidence", "AIDA Decay Germanium Wr Time Spectrum;dt (ns); Counts", 5000, 0, 100e6);
-  TH1F* h1DecayGermaniumCoincidenceAbsEvtTime = new TH1F("h1_decay_germanium_absevttime_coincidence", "AIDA Decay Germanium Abs Evt Time Spectrum;dt (ns); Counts", 5000, 0, 10e9);
-
+  TH1F* h1DecayGermaniumCoincidenceWrTime = new TH1F("h1_decay_germanium_wrtime_coincidence", "AIDA Decay Germanium Wr Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
+  TH1F* h1DecayGermaniumCoincidenceAbsEvtTime = new TH1F("h1_decay_germanium_absevttime_coincidence", "AIDA Decay Germanium Abs Evt Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
   // Decay-Bplast Coinicdence 
-  TH1F* h1DecayBplastCoincidenceWrTime = new TH1F("h1_decay_bplast_wrtime_coincidence", "AIDA Decay bPlast Wr Time Spectrum;dt (ns); Counts", 5000, 0, 500e3);
-  TH1F* h1DecayBplastCoincidenceAbsEvtTime = new TH1F("h1_decay_bplast_absevttime_coincidence", "AIDA Decay Bplast Abs Evt Time Spectrum;dt (ns); Counts", 5000, 0, 500e3);
+  TH1F* h1DecayBplastCoincidenceWrTime = new TH1F("h1_decay_bplast_wrtime_coincidence", "AIDA Decay bPlast Wr Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
+  TH1F* h1DecayBplastCoincidenceAbsEvtTime = new TH1F("h1_decay_bplast_absevttime_coincidence", "AIDA Decay Bplast Abs Evt Time Spectrum;dt (ns); Counts", 1000, -600e3, 600e3);
 
+  // WR-ABS EVT COINCIDENCES
   // Wr-AbsEvt Time diff 
-  TH1F* h1BplastWrAbsEvtTimeDiff = new TH1F("h1_bplast_wr_absevt_timediff", "bPlast Wr-AbsEvt Time Difference;dt (ns); Counts", 5000, 0, 400);
-  TH1F* h1GermaniumWrAbsEvtTimeDiff = new TH1F("h1_germanium_wr_absevt_timediff", "Germanium Wr-AbsEvt Time Difference;dt (ns); Counts", 5000, 5e9, 20e9);
+  TH1F* h1BplastWrAbsEvtTimeDiff = new TH1F("h1_bplast_wr_absevt_timediff", "bPlast Wr-AbsEvt Time Difference;dt (ns); Counts", 100, 100, 200);
+  TH1F* h1GermaniumWrAbsEvtTimeDiff = new TH1F("h1_germanium_wr_absevt_timediff", "Germanium Wr-AbsEvt Time Difference;dt (ns); Counts", 250, 0, 250);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -205,9 +275,8 @@ void subsystemCoincidence_bak(const char* input, const char* output){
   // Read implant events
   while (implantReader.Next()){
     // Create and fill struct
-    WrSubsystemTime timeStruct = {*implantWrTime};
-    implantTimeSet.emplace(timeStruct);  
-    counter++;
+    implantTimeSet.emplace(*implantWrTime);  
+    ++counter;
   }
   std::cout << "Finished filling the implant time set!" << std::endl;
   std::cout << "Number of implant time entries: " << implantTimeSet.size() << " / " << counter << std::endl << std::endl;
@@ -217,9 +286,8 @@ void subsystemCoincidence_bak(const char* input, const char* output){
   while (decayReader.Next()){
     // Create and fill struct
     if( TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
-      WrSubsystemTime timeStruct = {*decayWrTime};
-      decayTimeSet.emplace(timeStruct);  
-      counter++;
+      decayTimeSet.emplace(*decayWrTime);  
+      ++counter;
     }
   }
   std::cout << "Finished filling the decay time set!" << std::endl;
@@ -229,9 +297,8 @@ void subsystemCoincidence_bak(const char* input, const char* output){
   counter = 0;
   while (frsReader.Next()){
     // Create and fill struct
-    WrSubsystemTime timeStruct = {*frsWrTime};
-    frsTimeSet.emplace(timeStruct);  
-    counter++;
+    frsTimeSet.emplace(*frsWrTime);  
+    ++counter;
   }
   std::cout << "Finished filling the frs time set!" << std::endl;
   std::cout << "Number of frs time entries: " << frsTimeSet.size() << " / " << counter  << std::endl << std::endl;
@@ -242,7 +309,7 @@ void subsystemCoincidence_bak(const char* input, const char* output){
     // Create and fill struct
     FebexSubsystemTime timeStruct = {*bplastWrTime, *bplastAbsEvtTime};
     bplastTimeSet.emplace(timeStruct);  
-    counter++;
+    ++counter;
   }
   std::cout << "Finished filling the bplast time set!" << std::endl;
   std::cout << "Number of bplast time entries: " << bplastTimeSet.size() << " / " << counter << std::endl << std::endl;
@@ -253,7 +320,7 @@ void subsystemCoincidence_bak(const char* input, const char* output){
     // Create and fill struct
     FebexSubsystemTime timeStruct = {*germaniumWrTime, *germaniumAbsEvtTime};
     germaniumTimeSet.emplace(timeStruct);  
-    counter++;
+    ++counter;
   }
   std::cout << "Finished filling the germanium time set!" << std::endl;
   std::cout << "Number of germanium time entries: " << germaniumTimeSet.size() << " / " << counter << std::endl << std::endl;
@@ -264,86 +331,72 @@ void subsystemCoincidence_bak(const char* input, const char* output){
   // ****************************** IMPLANT COINCIDENCES *********************************
   // *************************************************************************************
 
-  std::cout << "Started implant coincidences..." << std::endl;
-  for ( const auto implantTimeStruct : implantTimeSet ){
+  if ( constants::IMPLANT_COINCIDENCE ){
 
-    // Fill the time spectra
-    h1ImplantWrTimeSpectrum->Fill(implantTimeStruct.time_wr);
+    std::cout << "Started implant coincidences..." << std::endl;
 
-    // MAKE IMPLANT DECAY COINCIDENCES
-    for (const auto decayTimeStruct : decayTimeSet ){
+    // Make thread objects and thread local histogram vector
+    std::vector<std::thread> implantCoincidenceThreads;
+    std::vector<std::vector<TH1F*>> implantCoincidenceLocalHistos(nThreads);
 
-      // Fill coincidence time spectra
-      h1ImplantDecayCoincidenceTime->Fill( decayTimeStruct.time_wr - implantTimeStruct.time_wr );
+    // Defing chunk sises of each thread
+    auto itr = implantTimeSet.begin(); // Beginning of loop
+    size_t total = implantTimeSet.size(); // Size of set
+    size_t chunkSize = total/nThreads; // Chunk size of threads
+
+    // Define loop domain of each thread
+    for (int idx=0; idx<nThreads; ++idx){
+      
+      // Implenemt thread ranges with final range edge case
+      auto startItr = itr;
+      std::advance(itr, (idx == nThreads - 1 ) ? std::distance(itr, implantTimeSet.end()) : chunkSize );
+      auto endItr = itr;
+      
+      // Create deep histogram copies for thread local histos
+      implantCoincidenceLocalHistos[idx] = {
+        (TH1F*)h1ImplantWrTimeSpectrum->Clone(),
+        (TH1F*)h1ImplantDecayCoincidenceTime->Clone(),
+        (TH1F*)h1ImplantFrsCoincidenceTime->Clone(),
+        (TH1F*)h1ImplantBplastCoincidenceWrTime->Clone(),
+        (TH1F*)h1ImplantBplastCoincidenceAbsEvtTime->Clone()
+      };
+
+      // Build thread object with current thread
+      implantCoincidenceThreads.emplace_back(processImplantRange, startItr, endItr, std::cref(decayTimeSet), std::cref(frsTimeSet), std::cref(bplastTimeSet), std::ref(implantCoincidenceLocalHistos[idx]));
+    } 
+
+    // Join threads
+    for ( auto& thread : implantCoincidenceThreads ) { thread.join(); }
+
+    // Merge thread local histograms into global histogram
+    for ( auto& localHistVector : implantCoincidenceLocalHistos ){
+      h1ImplantWrTimeSpectrum->Add(localHistVector[0]);
+      h1ImplantDecayCoincidenceTime->Add(localHistVector[1]);
+      h1ImplantFrsCoincidenceTime->Add(localHistVector[2]);
+      h1ImplantBplastCoincidenceWrTime->Add(localHistVector[3]);
+      h1ImplantBplastCoincidenceAbsEvtTime->Add(localHistVector[4]);
+
+      // Clean up thread local hists
+      for (auto* hist : localHistVector ) { delete hist; }
+    }
+
+    // DEBUG
+    for (auto& impTime : implantTimeSet ){
+
+      for (auto& frsTime : frsTimeSet ){
+
+        Long64_t dt = frsTime-impTime;
+        // std::cout << "Implant: " << impTime << ", FRS: " << frsTime << ", dt: " << dt << std::endl;
+        if (dt<0) {
+          std::cout << "Implant: " << impTime << ", FRS: " << frsTime << ", dt: " << dt << std::endl;
+        }
+      }
 
     }
 
-    // MAKE IMPLANT FRS COINCIDENCES
-    for (const auto frsTimeStruct : frsTimeSet ){
-
-      // Fill coincidence time spectra
-      h1ImplantFrsCoincidenceTime->Fill( frsTimeStruct.time_wr - implantTimeStruct.time_wr );
-
-    }
-
-    // MAKE IMPLANT BPLAST COINCIDENCES
-    for (const auto bplastTimeStruct : bplastTimeSet ){
-
-      // Fill coincidence time spectra
-      h1ImplantBplastCoincidenceWrTime->Fill( bplastTimeStruct.time_wr - implantTimeStruct.time_wr );
-      h1ImplantBplastCoincidenceAbsEvtTime->Fill( bplastTimeStruct.time_abs_evt - implantTimeStruct.time_wr );
-
-    }
+    std::cout << "Finished implant coincidences!" << std::endl << std::endl;
 
   }
-  std::cout << "Finished implant coincidences!" << std::endl << std::endl;
-
-
-  // *************************************************************************************
-  // ****************************** DECAY COINCIDENCES *********************************
-  // *************************************************************************************
-
-// std::cout << "Started decay coincidences..." << std::endl;
-// for ( const auto decayTimeStruct : decayTimeSet ){
-
-//   // Fill the time spectra
-//   h1DecayWrTimeSpectrum->Fill(decayTimeStruct.time_wr);
-
-//   // MAKE DECAY BPLAST COINCIDENCES
-//   for (const auto bplastTimeStruct : bplastTimeSet ){
-
-//     // Fill coincidence time spectra
-//     h1DecayBplastCoincidenceWrTime->Fill( bplastTimeStruct.time_wr - decayTimeStruct.time_wr );
-//     h1DecayBplastCoincidenceAbsEvtTime->Fill( bplastTimeStruct.time_abs_evt - decayTimeStruct.time_wr );
-
-//   }
-
-//   // MAKE DECAY GERMANIUM COINCIDENCES
-//   for (const auto germaniumTimeStruct : germaniumTimeSet ){
-
-//     // Fill coincidence time spectra
-//     h1DecayGermaniumCoincidenceWrTime->Fill( germaniumTimeStruct.time_wr - decayTimeStruct.time_wr );
-//     h1DecayGermaniumCoincidenceAbsEvtTime->Fill( germaniumTimeStruct.time_abs_evt - decayTimeStruct.time_wr );
-
-//   }
-
-// }
-// std::cout << "Finished decay coincidences!" << std::endl << std::endl;
-
-
-  // *************************************************************************************
-  // ****************************** FRS COINCIDENCES *********************************
-  // *************************************************************************************
-
-  std::cout << "Started frs coincidences..." << std::endl;
-  for ( const auto frsTimeStruct : frsTimeSet ){
-
-    // Fill the time spectra
-    h1FrsWrTimeSpectrum->Fill(frsTimeStruct.time_wr);
-
-  }
-  std::cout << "Finished frs coincidences!" << std::endl << std::endl;
-
 
   // *************************************************************************************
   // ****************************** BPLAST COINCIDENCES *********************************

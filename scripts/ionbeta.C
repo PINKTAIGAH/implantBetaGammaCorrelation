@@ -34,17 +34,16 @@ namespace constants{
   const bool VETO_INTERRUPTED_IMPLANTS = true; // Veto any implant which has a subsequent implant occure within time and position window
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
-  const double TIME_PER_DT_BIN = 10e6; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
+  const double TIME_PER_DT_BIN = 1e9; // Time per bin in Implant-beta time correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const uint64_t IMPLANT_DEAD_TIME = 300e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
   const int BETA_CANDIDATE_CUT = 1; // Define number of candidate betas a implant must have before plotting
 
-  /*const std::map<, int64_t> PROMPT_GAMMA_WINDOW = { {"start", 14498}, {"final", 16498} };*/
-  const int64_t PROMPT_WINDOW_START = 13610; 
-  const int64_t PROMPT_WINDOW_END = 16223; 
+  // const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { 13229, 17991 };
+  const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -20000, 20000 };
 
   const int NEIGHBOURING_POSITION_BINS = POSITION_THRESHOLD*2+1; // Bin # used for beta candidate hit pattern histogram
   const int64_t IMPDECAY_TIME_BINS = 2*TIME_THRESHOLD/TIME_PER_DT_BIN;
@@ -538,6 +537,7 @@ void ionbeta(const char* input, const char* output){
   int matched_implantdecays_counter = 0;
   int matched_backwards_implantdecays_counter = 0;
   int matched_implantbetagamma_counter = 0;
+  int matched_betagamma_counter = 0;
   std::vector<std::tuple<CorrelationType, BetaType, int64_t, int64_t, double, double, double, double, double, double>> beta_candidate_data_vector;
 
   // Loop over all gated implant events in map and perform a beta match
@@ -837,13 +837,13 @@ void ionbeta(const char* input, const char* output){
       // Loop over all germanium events between decay event and end of prompt gamma window
       for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
 
-        // int time_diff = last_matched_decay_time - germanium_evt->first; // Reverse like in jeroens code
-        int time_diff = germanium_evt->first - last_matched_decay_time; // Like regular people
+        int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
+        // int64_t time_diff = germanium_evt->first - last_matched_decay_time; // Like regular people
 
-        if ( time_diff > constants::PROMPT_WINDOW_END ){ break; }
+        if ( time_diff > constants::PROMPT_GAMMA_WINDOW.second ){ break; }
 
         // Check if germanium event is within prompt window
-        if ( time_diff > constants::PROMPT_WINDOW_START && time_diff < constants::PROMPT_WINDOW_END ){
+        if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
             
           // Unpack germanium event items within prompt window
           auto [germanium_energy, germanium_spill] = germanium_evt->second; 
@@ -860,6 +860,58 @@ void ionbeta(const char* input, const char* output){
   } // End of matched decay event loop
 
   std::cout << "Finished Matched Beta - Gamma matching routine!" << std::endl << std::endl;
+
+
+  // *************************************************************************************
+  // ************************** ALL DECAY - GAMMA CORRELATION ****************************
+  // *************************************************************************************
+
+  std::cout << "Started All Beta - Gamma matching routine..." << std::endl;
+  
+  // Loop over all matched decay events
+  for( auto good_decay_evt = good_decays_map.begin(); good_decay_evt != good_decays_map.end(); good_decay_evt++ ){
+
+    // Unpack decay data 
+    int64_t decay_time = good_decay_evt->first;
+    auto [useless_1, useless_2, useless_3, useless_4, useless_5, decay_spill, useless_6, useless_7] = good_decay_evt->second;
+
+    // Skip if decay is onspill and have not been selected
+    if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
+
+    // Skip if decay occures in the deadtime induced by an implant
+    if ( deadtimeWindowManager.contains(decay_time) ){ continue; }
+
+    // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
+    auto germanium_start = germanium_map.lower_bound(decay_time - 50e3);
+
+    // *************************************************************************************
+    // **************************  LOOP OVER GERMANIUM EVENTS ******************************
+    // *************************************************************************************
+
+    // Loop over all germanium events between decay event and end of prompt gamma window
+    for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
+
+      int64_t time_diff = -( decay_time - germanium_evt->first ); // Reverse like in jeroens code
+      // int64_t time_diff = germanium_evt->first - decay_time; // Like regular people
+
+      if ( time_diff > constants::PROMPT_GAMMA_WINDOW.second ){ break; }
+
+      // Check if germanium event is within prompt window
+      if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
+          
+        // Unpack germanium event items within prompt window
+        auto [germanium_energy, germanium_spill] = germanium_evt->second; 
+
+        // Fill gamma energy spectrum and increase counter
+        h1_implantbetagamma_spectrum_before_ionbeta->Fill(germanium_energy); // Fill gamma energy spectrum
+        matched_betagamma_counter++;
+      }
+
+    } // End of germanium event loop
+      
+  } // End of matched decay event loop
+
+  std::cout << "Finished All Beta - Gamma matching routine!" << std::endl << std::endl;
     
   // *************************************************************************************
   // ****************************** PRINT OUT STATISTICS *********************************
@@ -870,7 +922,8 @@ void ionbeta(const char* input, const char* output){
     std::cout << "Matched: " << matched_implantdecays_counter<< " out of " << gated_implants_map.size() << " gated implant events" << std::endl;
     std::cout << "Matched: " << matched_implantdecays_counter << " out of " << all_implants_map.size() << " implant events" << std::endl;
     std::cout << "Matched: " << matched_backwards_implantdecays_counter << " backwards gated implant events" << std::endl;
-    std::cout << "Matched: " << matched_implantbetagamma_counter << " implant-beta-gamma events" << std::endl << std::endl;
+    std::cout << "Matched: " << matched_implantbetagamma_counter << " implant-beta-gamma events" << std::endl;
+    std::cout << "Matched: " << matched_betagamma_counter << " beta-gamma events" << std::endl << std::endl;
   
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
@@ -929,18 +982,30 @@ void ionbeta(const char* input, const char* output){
   h2_decay_energy_dt_high_multiplicity->Write();
   h2_strip_dt_high_multiplicity->Write();
   gFile->cd();
-  
-  nt_aida_implant_beta_dt->Write();
-  nt_all_candidate_ionbeta_dt->Write();
 
+  TDirectory* vetoedDecays = outputFile->mkdir("vetoed_decays");
+  vetoedDecays->cd();
+  h1_deadtime_implant_vetoed_decay_candidates_time->Write();
+  h1_interrupted_implant_vetoed_decay_candidates_time->Write();
+  gFile->cd();
+
+  TDirectory* ionbetaMatch = outputFile->mkdir("ionbeta_match");
+  ionbetaMatch->cd();
   h2_aida_implant_xy->Write();
   h1_aida_wr_times->Write();
   h2_aida_matched_xy->Write();
   h1_aida_implant_beta_dt->Write();
-  h1_implantbetagamma_spectrum_after_ionbeta->Write();
+  gFile->cd();
 
-  h1_deadtime_implant_vetoed_decay_candidates_time->Write();
-  h1_interrupted_implant_vetoed_decay_candidates_time->Write();
+  TDirectory* gammaCoincidences = outputFile->mkdir("gamma_coincidences");
+  gammaCoincidences->cd();
+  h1_implantbetagamma_spectrum_before_ionbeta->Write();
+  h1_implantbetagamma_spectrum_after_ionbeta->Write();
+  gFile->cd();
+  
+  
+  nt_aida_implant_beta_dt->Write();
+  nt_all_candidate_ionbeta_dt->Write();
 
   std::cout << "Finished writing the histograms" << std::endl;
 
