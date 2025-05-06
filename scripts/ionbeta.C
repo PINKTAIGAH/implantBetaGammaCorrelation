@@ -26,7 +26,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "85mo"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -34,14 +34,14 @@ namespace constants{
   const bool VETO_INTERRUPTED_IMPLANTS = true; // Veto any implant which has a subsequent implant occure within time and position window
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
-  const double TIME_PER_DT_BIN = 1e9; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
+  const double TIME_PER_DT_BIN = 1e6; // Time per bin in Implant-beta time correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const uint64_t IMPLANT_DEAD_TIME = 300e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
   const int BETA_CANDIDATE_CUT = 1; // Define number of candidate betas a implant must have before plotting
-  const int BETA_GAMMA_CANDIDATE_CUT = 4;
+  const int BETA_GAMMA_CANDIDATE_CUT = 40;
 
   // const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { 13229, 17991 };
   const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -18200, -12900 };
