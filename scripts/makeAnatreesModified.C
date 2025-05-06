@@ -26,8 +26,8 @@ namespace constants{
   const int TOTAL_GERMANIUM_DETECTORS = 15; // Number of germanium detectors 
   const int TOTAL_GERMANIUM_CRYSTALS = 2; // Number of germanium crystals
 
-  const int LOOKAHEAD = 10 ; // Number of entries to look ahead for implant-FRS coincidence
-  const std::pair<ULong64_t, ULong64_t> FRS_TIMEWINDOW = {-16890, -10700};
+  const int LOOKAHEAD = 10; // Number of entries to look ahead for implant-FRS coincidence
+  const std::pair<ULong64_t, ULong64_t> FRS_IMPLANT_TIMEWINDOW = {-18e3, -10e3};
 
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
     // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb_bb7.root"},
@@ -169,7 +169,7 @@ bool isBrokenStrip(std::vector<double> broken_strip_vector, double event_strip){
 // *************************************************************************************
 
 
-void makeAnatrees(const char* input, const char* output) {
+void makeAnatreesModified(const char* input, const char* output) {
 
   // *************************************************************************************
   // ****************************** OPEN & CREATE FILES **********************************
@@ -286,7 +286,13 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<Double_t> germanium_energy(reader, "GermaniumCalData.fchannel_energy");
 
   TTreeReaderArray<FrsMultiHitItem> FrsMultiItem(reader, "FrsMultiHitData");
-  TTreeReaderArray<FrsHitItem> FrsItem(reader, "FrsHitData");
+  /*TTreeReaderArray<Float_t> frs_x4(reader, "FrsHitData.fID_x4");*/
+  /*TTreeReaderArray<Float_t> frs_x2(reader, "FrsHitData.fID_x2");*/
+  /*TTreeReaderArray<Float_t> frs_z(reader, "FrsHitData.fID_z41");*/
+  /*TTreeReaderArray<Float_t> frs_z2(reader, "FrsHitData.fID_z42");*/
+  /*TTreeReaderArray<Float_t> frs_aoq(reader, "FrsHitData.fID_AoQ_corr_s2s4");*/
+  /*TTreeReaderArray<long long> frs_time(reader, "FrsHitData.fwr_t");*/
+  /*TTreeReaderArray<Float_t> frs_dedeg(reader, "FrsHitData.fID_dEdeg_z41");*/
 
   // *************************************************************************************
   // ****************************** DEFINE OUTPUT TREES **********************************
@@ -348,14 +354,12 @@ void makeAnatrees(const char* input, const char* output) {
   int totalEntries = reader.GetEntries(true);
 
   // Loop over all entries in the old tree
-  for (int current_entry = 0; current_entry<totalEntries; ++current_entry) {
-
-    reader.SetEntry(current_entry);
+  while (reader.Next()) {
 
     // *************************************************************************************
     // ****************************** GET EVENT INFORMATION *********************************
     // *************************************************************************************
-     
+
     // sizes of events
     int germaniumhits = germanium_time.GetSize();
     int aidadecayhits = decay_time.GetSize();
@@ -382,7 +386,6 @@ void makeAnatrees(const char* input, const char* output) {
     if(*spill == true) spflag = 1;
     if(*spill == false) spflag = 2;
       
-    // if (*spill == true) std::cout << "[DEBUG] New Entry" << std::endl;
 
     // *************************************************************************************
     // ****************************** LOOP OVER BPLAST  ************************************
@@ -461,110 +464,75 @@ void makeAnatrees(const char* input, const char* output) {
     }
     
 
-    // std::cout << "[DEBUG] PreCheck" << std::endl;
     // Implants in coincidence with FRS
-    if (aidaimphits > 0 && FrsMultiItem.GetSize()>0 && FrsItem.GetSize()>0) {
-      // std::cout << "[DEBUG] PostCheck" << std::endl;
+    if (aidaimphits > 0) {
+      
+      // Loop over all FrsMHTDC dataitems
+      for (auto const& frs_multi_item : FrsMultiItem) {
 
-      // Apply Lookahead to check frs entrie sof other frs events
-      for (int ilook=current_entry; ilook<=current_entry+constants::LOOKAHEAD; ++ilook){
-
-        // Defensive code for end of entry loop
-        if (ilook < 0 || ilook > totalEntries - 1) { continue; }
-
-        // Jump to ilook
-        reader.SetEntry(ilook);
+        std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
+        std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
+        std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
+        std::vector<float> const& X4 = frs_multi_item.Get_ID_s4x_mhtdc();
         
-        // Loop over all FrsMHTDC dataitems
-        for (auto const& frs_multi_item : FrsMultiItem) {
+        //  Skip frs subevents where implant index wouldbe out of bounds
+        for(int i =0; i<AoQ.size(); i++){
+          if ( i >= Z.size() || i >= Z2.size() || i >= X4.size() ) { continue; }
 
-          for (auto const& frs_item : FrsItem){
+          // Get FRS variables
+          float aoq = AoQ[i];
+          float z = Z[i];
+          float z2 = Z2[i];
+          float x4 = X4[i];
 
-            std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
-            std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
-            std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
-            std::vector<float> const& X4 = frs_multi_item.Get_ID_s4x_mhtdc();
-            Long64_t const& frs_wr = frs_item.Get_wr_t();
+          // Loop over all gatedimplant isotopes
+          for (auto gimp_itr : gatedimplant_cuts_map){
             
-            //  Skip frs subevents where implant index wouldbe out of bounds
-            for(int i =0; i<AoQ.size(); i++){
-              if ( i >= Z.size() || i >= Z2.size() || i >= X4.size() ) { continue; }
+            // Unpack entries inside map 
+            std::string gimp_key = gimp_itr.first;
+            auto [x4aoq_cut, zz2_cut] = gimp_itr.second;
+            
+            if( x4aoq_cut->IsInside(aoq, x4) && zz2_cut->IsInside(z, z2) ){
 
-              // Get FRS variables
-              float aoq = AoQ[i];
-              float z = Z[i];
-              float z2 = Z2[i];
-              float x4 = X4[i];
+              for (int j = 0; j < aidaimphits; j++){
 
-              // Get aida entries of current entry
-              reader.SetEntry(current_entry);
+                // Determine if implant subevent has stopped in specific DSSSD
+                if (implant_dssd[j] == constants::DSSSD && bpflag == 0){ stopped = 1; } 
+                else { stopped = 2; }
 
-              // Loop over all gatedimplant isotopes
-              for (auto gimp_itr : gatedimplant_cuts_map){
-                
-                // Unpack entries inside map 
-                std::string gimp_key = gimp_itr.first;
-                auto [x4aoq_cut, zz2_cut] = gimp_itr.second;
-                
-                if(x4aoq_cut->IsInside(aoq, x4) && zz2_cut->IsInside(z, z2) ){
+                if( gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
+                   
+                  aida_implant_data.time = implant_time[j];
+                  aida_implant_data.stopped = stopped;
+                  aida_implant_data.x = implant_x[j];
+                  aida_implant_data.y = implant_y[j];
+                  aida_implant_data.energy = implant_energy[j];
+                  aida_implant_data.energy_x = implant_energy_x[j];
+                  aida_implant_data.energy_y = implant_energy_y[j];
+                  aida_implant_data.sp = spflag;
+                  aida_implant_data.bp = bpflag;
 
-                  for (int j = 0; j < aidaimphits; j++){
+                  gatedimplant_trees_map[gimp_key]->Fill();
 
-                    // Determine if implant subevent has stopped in specific DSSSD
-                    if (implant_dssd[j] == constants::DSSSD && bpflag == 0){ stopped = 1; } 
-                    else { stopped = 2; }
-
-                    // Define time diff of coincidence
-                    Long64_t time_diff = frs_wr - implant_time[j];
-                    
-                    //Time gate on the frs event and not relying on the timestitching. Idea: require only one implant for the frs event?
-                    if (time_diff < constants::FRS_TIMEWINDOW.first) { continue; }
-                    if (time_diff > constants::FRS_TIMEWINDOW.second) { break; }
-
-                    if( gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
-                       
-                      // std::cout << "[DEBUG] FOUND an FRS-Implant coincidence.  dT = " << frs_wr-implant_time[j]  << " ###  LookAhead = " << ilook << std::endl;
-                       
-                      aida_implant_data.time = implant_time[j];
-                      aida_implant_data.stopped = stopped;
-                      aida_implant_data.x = implant_x[j];
-                      aida_implant_data.y = implant_y[j];
-                      aida_implant_data.energy = implant_energy[j];
-                      aida_implant_data.energy_x = implant_energy_x[j];
-                      aida_implant_data.energy_y = implant_energy_y[j];
-                      aida_implant_data.sp = spflag;
-                      aida_implant_data.bp = bpflag;
-
-                      gatedimplant_trees_map[gimp_key]->Fill();
-
-                      gatedimplant_counter_map[gimp_key]++;
-                      if ( stopped == 1 ){ gatedimplant_stopped_counter_map[gimp_key]++; }
-
-                    }
-
-                    gatedimplant_filledtree_map[gimp_key].insert(j);
-
-                  } // End of aida implant loop
+                  gatedimplant_counter_map[gimp_key]++;
+                  if ( stopped == 1 ){ gatedimplant_stopped_counter_map[gimp_key]++; }
 
                 }
 
-              } // End of gated implant map loop
+                gatedimplant_filledtree_map[gimp_key].insert(j);
 
-            } // End of frs subevent loop
+              } // End of aida implant loop
 
-          } // End of FRS data item loop
+            }
 
-        } // End of FRS MHTDC data item loop
-        
-        // Change back to ilook for next loop
-        reader.SetEntry(ilook);
+          } // End of gated implant map loop
 
-      } // End of lookahead loop
+        } // End of frs subevent loop
+
+      } // End of FRS data item loop
 
     }
 
-    // Set entry to current for rest of loop
-    reader.SetEntry(current_entry);
 
     // *************************************************************************************
     // ****************************** LOOP OVER DECAY EVENTS *******************************
@@ -578,7 +546,7 @@ void makeAnatrees(const char* input, const char* output) {
 
       for (int i = 0; i < aidadecayhits; i++) {
 
-        if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 7000) {
+        if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {
 
           if (aidadecay_filledtree.count(i) == 0) {
 
@@ -664,7 +632,7 @@ void makeAnatrees(const char* input, const char* output) {
     std::cout << "Number of " << key << " implants: " << gatedimplant_counter_map[key] << " ### Stopped: " << gatedimplant_stopped_counter_map[key] << " ### Stopping Efc.: " << gatedimplant_stopped_counter_map[key]*100/gatedimplant_counter_map[key] << " %" << std::endl;
   }
   
-  // std::cout << std::endl << std::endl;
+  std::cout << std::endl << std::endl;
 
   // *************************************************************************************
   // ****************************** WRITE TREES ******************************************
@@ -674,7 +642,9 @@ void makeAnatrees(const char* input, const char* output) {
   outputFile->cd();
   
   implant_tree->Write();
+  std::cout << "Before creation: decay_tree->GetDirectory() = " << decay_tree->GetDirectory() << std::endl;
   decay_tree->Write();
+  std::cout << "After creation: decay_tree->GetDirectory() = " << decay_tree->GetDirectory() << std::endl;
   germanium_tree->Write();
   
   // Loop over trees and Write

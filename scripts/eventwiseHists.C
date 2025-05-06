@@ -41,7 +41,8 @@ namespace constants{
     {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
     {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
     {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
-    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"}
+    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
+    {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
   };
 
   const int DSSD = 1;
@@ -408,6 +409,9 @@ void eventwiseHists(const char* input, const char* output) {
   // Plot Decay-Germanium coincidence
   TH1F* h1_decay_germanium_dt = new TH1F("decay_germanium_dt", "AIDA Decay - DEGAS time difference", 50000, -100e3, 100e3);
 
+  // Plot Decay event size
+  TH1F* h1_decay_event_size = new TH1F("decay_event_size", "AIDA Decay Event Size", 10000, -40e3, 40e3);
+
   // *************************************************************************************
   // ****************************** LOOP OVER ALL EVENTS *********************************
   // *************************************************************************************
@@ -687,6 +691,8 @@ void eventwiseHists(const char* input, const char* output) {
     if(aidadecayhits > 0){
     
       for (int i = 0; i < aidadecayhits; i++) {
+        
+        h1_decay_event_size->Fill(TMath::Abs(decay_time[aidadecayhits-1] - decay_time[0]));
     
         if (TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000) {
     
@@ -924,6 +930,8 @@ void eventwiseHists(const char* input, const char* output) {
   sh1_aida_decay_multiplicity->Add(h1_aida_decay_multiplicity_offspill);
   sh1_aida_decay_multiplicity->Write();
 
+  h1_decay_event_size->Write();
+
   // Write decay cluster sizes
   h1_aida_decay_cluster_size_x->Write();
   h1_aida_decay_cluster_size_y->Write();
@@ -932,6 +940,7 @@ void eventwiseHists(const char* input, const char* output) {
   // Write gamma plots
   h1_germanium_spectra_all->Write();
   h1_decay_germanium_dt->Write();
+
 
   // *************************************************************************************
   // ****************************** CLEANUP **********************************************

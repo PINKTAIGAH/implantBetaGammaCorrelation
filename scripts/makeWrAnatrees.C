@@ -227,7 +227,7 @@ void makeWrAnatrees(const char* input, const char* output) {
       for ( int j = 0; j < aidadecayhits; j++ ) {
 
         if ( decay_dssd[j] != constants::DSSSD ){ continue; }
-        if ( TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) > 33000 ) { continue; }
+        if ( TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) > 7000 ) { continue; }
         if ( aidadecay_filledtree.count(j) != 0 ){ continue; }
 
         aida_decay_data.time_wr = decay_time[j];
