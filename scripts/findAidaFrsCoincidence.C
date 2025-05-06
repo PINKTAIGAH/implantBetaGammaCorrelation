@@ -174,59 +174,65 @@ void findAidaFrsCoincidence(const char* input) {
     // Define Event flags
     int spflag = (*spill) ? 1 : 2;
 
+    // Print number of entries for FRS TAC and MHTDC 
+    // if (!(FrsItem.GetSize()==0 && FrsMultiItem.GetSize()==0)){
+    //   std::cout << "[DEBUG] FRS TAC: " << FrsItem.GetSize() << "   ###   FRS MHTDC: " << FrsMultiItem.GetSize() << std::endl;
+    // }
+
     // *************************************************************************************
     // ****************************** LOOP OVER FRS MHTDC  *********************************
     // *************************************************************************************
 
-    // // Loop over all FrsMHTDC dataitems
-    // for (auto const& frs_multi_item : FrsMultiItem) {
+    int mhtdc_counter = 0;
 
-    //   std::vector<Float_t> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
-    //   std::vec      Long64_t time_wr = frs_item.Get_wr_t();tor<Float_t> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
+    // Loop over all FrsMHTDC dataitems
+    for (auto const& frs_multi_item : FrsMultiItem) {
       
-    //   //  Skip frs subevents where implant index wouldbe out of bounds
-    //   for(int idx=0; idx<AoQ.size(); ++idx){
-    //     if (idx >= AoQ.size() || idx >= Z.size()) { continue; }
+      ++mhtdc_counter;
+      // std::vector<Float_t> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
+      
+      // //  Skip frs subevents where implant index wouldbe out of bounds
+      // for(int idx=0; idx<AoQ.size(); ++idx){
+      //   if (idx >= AoQ.size() || idx >= Z.size()) { continue; }
 
-    //     // Skip if FRS has invalid entires
-    //     if ( Z[idx] == -999.) { continue; }
+      //   // Skip if FRS has invalid entires
+      //   if ( Z[idx] == -999.) { continue; }
 
-    //     ++mhtdcFrsAidaCoincidenceCounters["sci41Hits"];
+      //   ++mhtdcFrsAidaCoincidenceCounters["sci41Hits"];
 
-    //     // Switch block to handle possibilities
-    //     switch (aidaimphits){
-    //       case 0: 
-    //         ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti0"];
-    //         break;
-    //       case 1: 
-    //         ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti1"];
-    //         break;
-    //       default:
-    //        ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti2+"];
-    //        break;
-    //     }
+      //   // Switch block to handle possibilities
+      //   switch (aidaimphits){
+      //     case 0: 
+      //       ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti0"];
+      //       break;
+      //     case 1: 
+      //       ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti1"];
+      //       break;
+      //     default:
+      //      ++mhtdcFrsAidaCoincidenceCounters["aidaImpMulti2+"];
+      //      break;
+      //   }
 
-    //     // Apply 82Nb gate
+        // Apply 82Nb gate
 
-    //   } // End of frs subevent loop
+      // } // End of frs subevent loop
 
-    // } // End of FRS data item loop
+    } // End of FRS data item loop
 
 
     // *************************************************************************************
     // ****************************** LOOP OVER FRS ****************************************
     // *************************************************************************************
-
+    int tac_counter = 0;
     // Loop over all Frs dataitems
     for (auto const& frs_item : FrsItem) {
-
+      ++tac_counter;
       Float_t const& AoQ = frs_item.Get_ID_AoQ_corr_s2s4();
       Float_t const& Z = frs_item.Get_ID_z41();
       Float_t const& Z2 = frs_item.Get_ID_z42();
       Long64_t time_wr = frs_item.Get_wr_t();
       
       // Get times
-
       if (wr_start==0 ){ wr_start = time_wr; }
       wr_end = time_wr;
 
@@ -323,6 +329,9 @@ void findAidaFrsCoincidence(const char* input) {
 
     } // End of FRS data item loop
 
+    if (!(tac_counter==0 && mhtdc_counter==0)){
+      // std::cout << "[DEBUG_KILL] FRS TAC: " << tac_counter << "   ###   FRS MHTDC: " << mhtdc_counter << std::endl;
+    }
     
     // *************************************************************************************
     // ****************************** PRINT OUT LOOP PROGRESS ******************************
