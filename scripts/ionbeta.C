@@ -26,7 +26,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "82nb"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -34,12 +34,12 @@ namespace constants{
   const bool VETO_INTERRUPTED_IMPLANTS = true; // Veto any implant which has a subsequent implant occure within time and position window
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
 
-  const int64_t TIME_SCALE = 1e6; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 500 * TIME_SCALE; // Time threshold for implant beta correlation
-  const double TIME_PER_DT_BIN = 1e6; // Time per bin in Implant-beta time correlation
+  const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
+  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
+  const double TIME_PER_DT_BIN = 1e9; // Time per bin in Implant-beta time correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
-  const uint64_t IMPLANT_DEAD_TIME = 300e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
+  const uint64_t IMPLANT_DEAD_TIME = 350e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
   const int BETA_CANDIDATE_CUT = 1; // Define number of candidate betas a implant must have before plotting
   const int BETA_GAMMA_CANDIDATE_CUT = 40;
 
@@ -74,7 +74,7 @@ namespace experimentInfo{
 
 enum EventType { GATEDIMPLANT, IMPLANT, DECAY }; // Tags for event type 
 enum CorrelationType { FORWARDS, BACKWARDS }; // Tags is ionbeta match is a borwards or backwards time correlations
-enum BetaType { CANDIDATE, MATCH }; // Tags for candidate betas (Have they been matched to an implant or not)
+enum BetaType { CANDIDATE, MATCH, SECOND_MATCH, THIRD_MATCH}; // Tags for candidate betas (Have they been matched to an implant or not)
 enum InterruptedCoincidenceType { NOT_INTERRUPTED, INTERRUPTED }; // Tags to define if an implant has beenn interrupted in a time window
 
 
@@ -285,8 +285,9 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_aida_implant_xy = new TH2F("aida_implant_xy", "AIDA Implant XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_matched_xy = new TH2F("aida_matched_xy", "AIDA Matched XY", 384, 0, 384, 128, 0, 128);
   TH1F* h1_aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
-
-  TH1F* h1_aida_implant_beta_dt = new TH1F("aida_implant_beta_dt", "Implant-Decay #Deltat;Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
+  TH1F* h1_aida_implant_beta_dt = new TH1F("aida_implant_beta_firstmatch_dt", "Implant-Decay #Deltat (First Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
+  TH1F* h1_aida_implant_beta_secondmatch_dt = new TH1F("aida_implant_beta_secondmatch_dt", "Implant-Decay #Deltat (Second Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
+  TH1F* h1_aida_implant_beta_thirdmatch_dt = new TH1F("aida_implant_beta_thirdmatch_dt", "Implant-Decay #Deltat (Third Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
 
   // Histograms for beta candidate events
   TH1F* h1_implantbeta_candidate_multiplicity_forwards = new TH1F("implantbeta_candidate_multiplicity_forwards", "Implant-Decay Forwards Candidate Multiplicity; Candidate Multiplicity; Counts", 100, 0, 100);
@@ -345,6 +346,8 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_strip_dt_high_multiplicity = new TH2F("strip_dt_high_multiplicity", "Strip XY vs Implant-Decay dt (Beta Multiplicity > 20)", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH1F* h1_candidate_wr_time_high_multiplicity = new TH1F("candidate_wr_time_high_multiplicity", "AIDA Candidate WR Times (Beta Multiplicity > 20)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_candidate_ionbeta_dt_high_multiplicity = new TH1F("candidate_ionbeta_dt_high_multiplicity", "Candidate Implant-Decay dt (Beta Multiplicity > 20)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
+
+  // Subsequent matches
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -539,8 +542,12 @@ void ionbeta(const char* input, const char* output){
   // Define & declare variebles to be used inside loop of gated implant events
   double gatedimplant_pos_x;
   double gatedimplant_pos_y;
-  bool found_forward_candidate;
-  bool found_backwards_candidate;
+  bool found_forward_match;
+  bool found_forward_second_match;
+  bool found_forward_third_match;
+  bool found_backward_match;
+  bool found_backward_second_match;
+  bool found_backward_third_match;
   int forwards_implantbeta_candidate_counter;
   int backwards_implantbeta_candidate_counter;
   int matched_implantdecays_counter = 0;
@@ -578,8 +585,12 @@ void ionbeta(const char* input, const char* output){
     int backwards_implantbeta_candidate_counter = 0;     
 
     // Reset flags for positive match in new loop
-    bool found_forward_candidate = false;
-    bool found_backwards_candidate = false;
+    found_forward_match = false;
+    found_forward_second_match = false;
+    found_forward_third_match = false;
+    found_backward_match = false;
+    found_backward_second_match = false;
+    found_backward_third_match = false;
 
     last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
 
@@ -604,7 +615,7 @@ void ionbeta(const char* input, const char* output){
       if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
 
       // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
-      if ( !constants::CHECK_BETA_CANDITATES && found_forward_candidate && found_backwards_candidate ){ break; }
+      if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
 
       // Unpack event variables for current decay event
       auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_spill, decay_bplast, decay_dssd] = decay_evt->second;
@@ -644,14 +655,49 @@ void ionbeta(const char* input, const char* output){
           BetaType beta_type = CANDIDATE; // Set tag for beta
           CorrelationType correlation_type = FORWARDS; // Set tag for correlation type
 
-          // Check that there has not been a forward beta candidate that has been matched to implant event
-          if (!found_forward_candidate){
-            
+          switch (forwards_implantbeta_candidate_counter){
+          case 1: {
+            // First Match 
             matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
-            found_forward_candidate = true; // Change flag for succesfull forward implant decay match
+            found_forward_match = true; // Change flag for succesfull forward implant decay match
             beta_type = MATCH; // Overwrite beta_type
+            break;
+          }
+          case 2: {
+            // Second Match 
+            found_forward_second_match = true; // Change flag for succesfull forward implant decay match
+            beta_type = SECOND_MATCH; // Overwrite beta_type
+            break;
+          } 
+          case 3: {
+            // Third Match 
+            found_forward_third_match = true; // Change flag for succesfull forward implant decay match
+            beta_type = THIRD_MATCH; // Overwrite beta_type
+            break;
+          } 
+          default:
+            // No longer tracking any matches
+            break;
           }
 
+          // // Check that there has not been a forward beta candidate that has been matched to implant event
+          // if (!found_forward_match){
+          //   matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
+          //   found_forward_match = true; // Change flag for succesfull forward implant decay match
+          //   beta_type = MATCH; // Overwrite beta_type
+          // }
+
+          // // Check that there has aalready been one decay that has been matched to implant event
+          // if (found_forward_match && !found_forward_second_match){
+          //   found_forward_second_match = true; // Change flag for succesfull forward implant decay match
+          //   beta_type = SECOND_MATCH; // Overwrite beta_type
+          // }
+
+          // // Check that there has aalready been two decay that has been matched to implant event
+          // if (found_forward_match && found_forward_second_match && !found_forward_third_match){
+          //   found_forward_third_match = true; // Change flag for succesfull forward implant decay match
+          //   beta_type = THIRD_MATCH; // Overwrite beta_type
+          // }
 
           // Add beta data to the vector
           beta_candidate_data_vector.emplace_back( std::make_tuple(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e) );
@@ -676,14 +722,49 @@ void ionbeta(const char* input, const char* output){
           BetaType beta_type = CANDIDATE; // Set tag for beta
           CorrelationType correlation_type = BACKWARDS; // Set tag for correlation type
 
-          // Check that there has not been a backwards beta candidate that has been matched to implant event
-          if (!found_backwards_candidate){
-
+          switch (backwards_implantbeta_candidate_counter){
+          case 1: {
+            // First
             matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
-            found_backwards_candidate = true; // Change flag for succesfull backward implant decay match
+            found_backward_match = true; // Change flag for succesfull forward implant decay match
             beta_type = MATCH; // Overwrite beta_type
-
+            break;
           }
+          case 2: {
+            // Second Match 
+            found_backward_second_match = true; // Change flag for succesfull forward implant decay match
+            beta_type = SECOND_MATCH; // Overwrite beta_type
+            break;
+          } 
+          case 3: {
+            // Third Match 
+            found_backward_third_match = true; // Change flag for succesfull forward implant decay match
+            beta_type = THIRD_MATCH; // Overwrite beta_type
+            break;
+          } 
+          default:
+            // No longer tracking any matches
+            break;
+          }
+
+          // // Check that there has not been a backwards beta candidate that has been matched to implant event
+          // if (!found_backward_match){
+          //   matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
+          //   found_backward_match = true; // Change flag for succesfull backward implant decay match
+          //   beta_type = MATCH; // Overwrite beta_type
+          // }
+
+          // // Check that there has aalready been one decay that has been matched to implant event
+          // if (found_backward_match && !found_backward_second_match){
+          //   found_backward_second_match = true; // Change flag for succesfull forward implant decay match
+          //   beta_type = SECOND_MATCH; // Overwrite beta_type
+          // }
+
+          // // Check that there has aalready been two decay that has been matched to implant event
+          // if (found_backward_match && found_backward_second_match && !found_backward_third_match){
+          //   found_backward_third_match = true; // Change flag for succesfull forward implant decay match
+          //   beta_type = THIRD_MATCH; // Overwrite beta_type
+          // }
 
           // Add beta data to the vector
           beta_candidate_data_vector.emplace_back( std::make_tuple(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e) );
@@ -793,6 +874,14 @@ void ionbeta(const char* input, const char* output){
         h2_decay_energy_dt_high_multiplicity->Fill(decay_e, time_diff);
         h2_strip_dt_high_multiplicity->Fill(decay_x, time_diff);
         h2_strip_dt_high_multiplicity->Fill(decay_y+400, time_diff);
+      }
+
+      if ( beta_type == SECOND_MATCH ){
+        h1_aida_implant_beta_secondmatch_dt->Fill(time_diff/constants::TIME_SCALE);
+      }
+
+      if ( beta_type == THIRD_MATCH ){
+        h1_aida_implant_beta_thirdmatch_dt->Fill(time_diff/constants::TIME_SCALE);
       }
 
       // if ( correlation_type == BACKWARDS && backwards_candidate_multiplicity >= 20){
@@ -1020,6 +1109,8 @@ void ionbeta(const char* input, const char* output){
   h1_aida_wr_times->Write();
   h2_aida_matched_xy->Write();
   h1_aida_implant_beta_dt->Write();
+  h1_aida_implant_beta_secondmatch_dt->Write();
+  h1_aida_implant_beta_thirdmatch_dt->Write();
   gFile->cd();
 
   TDirectory* gammaCoincidences = outputFile->mkdir("gamma_coincidences");

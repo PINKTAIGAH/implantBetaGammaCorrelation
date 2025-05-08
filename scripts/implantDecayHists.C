@@ -11,6 +11,7 @@
 #include<THStack.h>
 #include<TFile.h>
 #include<TTree.h>
+#include<TDirectory.h>
 #include<TTreeReader.h>
 #include<TTreeReaderArray.h>
 #include<TTreeReaderValue.h>
@@ -40,6 +41,7 @@ namespace constants{
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_IMPLANT = {};
   const std::vector<double> BROKEN_AIDA_X_STRIPS_DECAY = {63, 64, 66, 130, 189, 194, 225, 256, 319, 320}; 
   const std::vector<double> BROKEN_AIDA_Y_STRIPS_DECAY = {};
+
 }
 
 namespace experimentInfo{
@@ -182,6 +184,8 @@ void implantDecayHists(const char* input, const char* output){
 
   TH2F* h2_implant_xy_energy = new TH2F("implant_xy_energy", "Implant XY Energy", 7000/20, 0, 7000, 7000/20, 0, 7000);
   TH2F* h2_decay_xy_energy = new TH2F("decay_xy_energy", "Decay XY Energy", 1500/20, 0, 1500, 1500/20, 0, 1500);
+  TH2F* h2_implant_xy = new TH2F("implant_xy", "Implant XY", 384, 0, 384, 128, 0, 128);
+  TH2F* h2_decay_xy = new TH2F("decay_xy", "Decay XY", 384, 0, 384, 128, 0, 128);
 
   TH1F* h1_implant_energy_all = new TH1F("implant_energy_all", "Implant Energy (Stopped + Punch-through)", 7000/20, 0, 7000);
   TH1F* h1_implant_energy_stopped = new TH1F("implant_energy_stopped", "Implant Energy (Stopped)", 7000/20, 0, 7000);
@@ -202,6 +206,30 @@ void implantDecayHists(const char* input, const char* output){
   TH2F* h2_strip_dt = new TH2F("strip_dt", "Strip XY vs Implant-Decay dt", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
 
   TH2F* h2_decay_energy_de_dt = new TH2F("decay_energy_de_dt", "Decay XY Energy difference vs Implant-Decay dt", 168/4, 0, 168, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD); 
+
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_500e6 = new TH2F("impdecay_deadtime_hitpattern_leq_500e6", "Implant - Decay dX vs dY (dT <= 500e6 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_500e3 = new TH2F("impdecay_deadtime_hitpattern_leq_500e3", "Implant - Decay dX vs dY (dT <= 500e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_450e3 = new TH2F("impdecay_deadtime_hitpattern_leq_450e3", "Implant - Decay dX vs dY (dT <= 450e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_400e3 = new TH2F("impdecay_deadtime_hitpattern_leq_400e3", "Implant - Decay dX vs dY (dT <= 400e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_350e3 = new TH2F("impdecay_deadtime_hitpattern_leq_350e3", "Implant - Decay dX vs dY (dT <= 350e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_300e3 = new TH2F("impdecay_deadtime_hitpattern_leq_300e3", "Implant - Decay dX vs dY (dT <= 300e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_250e3 = new TH2F("impdecay_deadtime_hitpattern_leq_250e3", "Implant - Decay dX vs dY (dT <= 250e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_200e3 = new TH2F("impdecay_deadtime_hitpattern_leq_200e3", "Implant - Decay dX vs dY (dT <= 200e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_150e3 = new TH2F("impdecay_deadtime_hitpattern_leq_150e3", "Implant - Decay dX vs dY (dT <= 150e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_100e3 = new TH2F("impdecay_deadtime_hitpattern_leq_100e3", "Implant - Decay dX vs dY (dT <= 100e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_leq_50e3 = new TH2F("impdecay_deadtime_hitpattern_leq_50e3", "Implant - Decay dX vs dY (dT <= 50e3 ns)", 768, -384, 384, 256, -128, 128);
+
+  TH2F* h2_impdecay_deadtime_hitpattern_union_500e6 = new TH2F("impdecay_deadtime_hitpattern_union_500e6", "Implant - Decay dX vs dY (450e6 <= dT <= 500e6 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_500e3 = new TH2F("impdecay_deadtime_hitpattern_union_500e3", "Implant - Decay dX vs dY (450e3 <= dT <= 500e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_450e3 = new TH2F("impdecay_deadtime_hitpattern_union_450e3", "Implant - Decay dX vs dY (400e3 <= dT <= 450e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_400e3 = new TH2F("impdecay_deadtime_hitpattern_union_400e3", "Implant - Decay dX vs dY (350e3 <= dT <= 400e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_350e3 = new TH2F("impdecay_deadtime_hitpattern_union_350e3", "Implant - Decay dX vs dY (300e3 <= dT <= 350e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_300e3 = new TH2F("impdecay_deadtime_hitpattern_union_300e3", "Implant - Decay dX vs dY (250e3 <= dT <= 300e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_250e3 = new TH2F("impdecay_deadtime_hitpattern_union_250e3", "Implant - Decay dX vs dY (200e3 <= dT <= 250e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_200e3 = new TH2F("impdecay_deadtime_hitpattern_union_200e3", "Implant - Decay dX vs dY (150e3 <= dT <= 200e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_150e3 = new TH2F("impdecay_deadtime_hitpattern_union_150e3", "Implant - Decay dX vs dY (100e3 <= dT <= 150e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_100e3 = new TH2F("impdecay_deadtime_hitpattern_union_100e3", "Implant - Decay dX vs dY (50e3 <= dT <= 100e3 ns)", 768, -384, 384, 256, -128, 128);
+  TH2F* h2_impdecay_deadtime_hitpattern_union_50e3 = new TH2F("impdecay_deadtime_hitpattern_union_50e3", "Implant - Decay dX vs dY (dT <= 50e3 ns)", 768, -384, 384, 256, -128, 128);
 
   // *************************************************************************************
   // ****************************** FILL MAPS WITH EVENTS ********************************
@@ -226,6 +254,7 @@ void implantDecayHists(const char* input, const char* output){
     h1_implant_event_rate->Fill(*implant_time);
     h1_implant_energy_all->Fill(*implant_e);
     if( *implant_dssd==constants::DSSD && *implant_bplast==0 ){
+      h2_implant_xy->Fill(*implant_x, *implant_y);
       h1_postcut_implant_event_rate->Fill(*implant_time);
       h2_implant_strip_energy->Fill(*implant_x, *implant_e);
       h2_implant_strip_energy->Fill(*implant_y+400, *implant_e);
@@ -241,6 +270,7 @@ void implantDecayHists(const char* input, const char* output){
   while (decay_reader.Next()){
     h1_decay_event_rate->Fill(*decay_time);
     if( *decay_dssd==constants::DSSD && TMath::Abs((int64_t)*decay_time_x-(int64_t)*decay_time_y)<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<3000 ){
+      h2_decay_xy->Fill(*decay_x, *decay_y);
       h1_postcut_decay_event_rate->Fill(*decay_time);
       h2_decay_strip_energy->Fill(*decay_x, *decay_e);
       h2_decay_strip_energy->Fill(*decay_y+400, *decay_e);
@@ -392,9 +422,9 @@ void implantDecayHists(const char* input, const char* output){
   double interruption_binwidth = 2e6;
   int interruption_counter = 0;
   
-  TH2F* h2_implant_xy = new TH2F("implant_xy", "Implant Hit Pattern", 384, 0, 384, 128, 0, 128);
-  TH2F* h2_implant_interuption_pixels = new TH2F("implant_interuption_pixels", Form("XY of subsequent Implants Occuring within %.1e ns of an implant XY", (double)interruption_time_threshold), 384, 0, 384, 128, 0, 128);
-  TH1F* h1_implant_interuption_dt = new TH1F("implant_interuption_dt", Form("dT of Subsequent Implants Occuring within %.1e ns of an implant;dt;%.1e", (double)interruption_time_threshold, interruption_binwidth), interruption_time_threshold/interruption_binwidth, 0, interruption_time_threshold);
+  TH2F* h2_gimplant_xy = new TH2F("gimplant_xy", "Gated Implant Hit Pattern", 384, 0, 384, 128, 0, 128);
+  TH2F* h2_gimplant_interuption_pixels = new TH2F("gimplant_interuption_pixels", Form("XY of subsequent Gated Implants Occuring within %.1e ns of an implant XY", (double)interruption_time_threshold), 384, 0, 384, 128, 0, 128);
+  TH1F* h1_gimplant_interuption_dt = new TH1F("gimplant_interuption_dt", Form("dT of Subsequent GatedImplants Occuring within %.1e ns of an implant;dt;%.1e", (double)interruption_time_threshold, interruption_binwidth), interruption_time_threshold/interruption_binwidth, 0, interruption_time_threshold);
 
   
   std::cout << "Started interrupted implant loop ..." << std::endl;
@@ -405,7 +435,7 @@ void implantDecayHists(const char* input, const char* output){
     auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
     gatedimplant_pos_x = x;
     gatedimplant_pos_y = y;
-    h2_implant_xy->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
+    h2_gimplant_xy->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
 
     for (auto gimp_second_evt = all_implants_map.begin(); gimp_second_evt!=all_implants_map.end(); gimp_second_evt++){
 
@@ -422,8 +452,8 @@ void implantDecayHists(const char* input, const char* output){
         if (time_diff<=interruption_time_threshold){
           interruption_counter++;
           // std::cout << "Interrupted implant WR: " << last_gatedimplant_time << " ##### Time Difference: " << time_diff/(double)interruption_time_scale << " ##### X,Y: " << TMath::Abs(x_curr-gatedimplant_pos_x) << "," << TMath::Abs(y_curr-gatedimplant_pos_y) << std::endl;
-          h2_implant_interuption_pixels->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
-          h1_implant_interuption_dt->Fill(time_diff);
+          h2_gimplant_interuption_pixels->Fill(gatedimplant_pos_x, gatedimplant_pos_y);
+          h1_gimplant_interuption_dt->Fill(time_diff);
           break;
         }
       }
@@ -434,7 +464,190 @@ void implantDecayHists(const char* input, const char* output){
 
   std::cout << "Number of interruptions found: " << interruption_counter << std::endl;
   std::cout << "Finished interrupted implant loop!" << std::endl << std::endl;
+
+
+  // *************************************************************************************
+  // ****************************** DEADTIME LOCALISATION ********************************
+  // *************************************************************************************
+
+  // Define & declare variebles to be used inside loop of gated implant events
+  last_gatedimplant_time = 0;
+  gatedimplant_pos_x = 0;
+  gatedimplant_pos_y = 0;
+  Long64_t max_deadtime_window = 500000;
+
+  // *************************************************************************************
+  // ****************************** LOOP OVER IMPLANTS **********************************
+  // *************************************************************************************
+
+  // Loop over all gated implant events in map and perform a beta match
+  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
+    
+    // Unpack event variables for current gated implant event
+    auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
+
+    // Continue loop only if gated implant occured in DSSSD 1 (AIDA)
+    if (type == IMPLANT && dssd == constants::DSSD){
+
+      // Check noisy implant channel strips and skip
+      if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
+      if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_IMPLANT, y) ){ continue; }
+
+      int implantbeta_candidate_counter = 0; // Reset counter to check all beta candidates
+      
+      last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
+
+      // Set gated implant position
+      gatedimplant_pos_x = x;
+      gatedimplant_pos_y = y;
+
+      // *************************************************************************************
+      // ****************************** LOOP OVER VALID DECAYS *******************************
+      // *************************************************************************************
+
+      // Find the decay event corresponding to the start of our decay loop using our time window
+      // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
+      auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 50e3);
+
+      // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
+      for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
+  
+        // Break out of loop if decay events are now outside of time window
+        if ( decay_evt->first > last_gatedimplant_time + max_deadtime_window ){ break; }
+
+        // Unpack event variables for current decay event
+        auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_dssd, decay_spill, decay_type] = decay_evt->second;
+
+        // Skip if not from correct DSSD
+        if ( decay_dssd != constants::DSSD) { continue; }
+
+        // Check for noisy decay branch strips and skip
+        if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
+        if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_DECAY, decay_y) ){ continue; }
+
+        // Check if decay event is onspill and skip if defined by user and is from desired dssd
+        if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
+        
+        // Find time difference between implant event and decay event
+        Long64_t time_diff = decay_evt->first - last_gatedimplant_time;
+        double impdecay_dx = decay_x - gatedimplant_pos_x; 
+        double impdecay_dy = decay_y - gatedimplant_pos_y; 
+
+        // Draw Hists
+        h2_impdecay_deadtime_hitpattern_leq_500e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 450000) { h2_impdecay_deadtime_hitpattern_union_500e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 450000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_450e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 400000) { h2_impdecay_deadtime_hitpattern_union_450e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 400000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_400e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 350000) { h2_impdecay_deadtime_hitpattern_union_400e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 350000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_350e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 300000) { h2_impdecay_deadtime_hitpattern_union_350e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 300000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_300e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 250000) { h2_impdecay_deadtime_hitpattern_union_300e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 250000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_250e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 200000) { h2_impdecay_deadtime_hitpattern_union_250e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 200000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_200e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 150000) { h2_impdecay_deadtime_hitpattern_union_200e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 150000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_150e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 100000) { h2_impdecay_deadtime_hitpattern_union_150e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 100000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_100e3->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 50000) { h2_impdecay_deadtime_hitpattern_union_100e3->Fill(impdecay_dx, impdecay_dy);}
+        if (time_diff > 50000) {continue;}
+        h2_impdecay_deadtime_hitpattern_leq_50e3->Fill(impdecay_dx, impdecay_dy);
+        h2_impdecay_deadtime_hitpattern_union_50e3->Fill(impdecay_dx, impdecay_dy);
+        
+      } // End of decay event loop
+      
+    }
+
+  } // End of gated implant event loop
+  
  
+  // *************************************************************************************
+  // *************************** DEADTIME LOCALISATION LONG TIMESCALE ********************
+  // *************************************************************************************
+
+  // Define & declare variebles to be used inside loop of gated implant events
+  last_gatedimplant_time = 0;
+  gatedimplant_pos_x = 0;
+  gatedimplant_pos_y = 0;
+  max_deadtime_window = 500000000;
+
+  // *************************************************************************************
+  // ****************************** LOOP OVER IMPLANTS **********************************
+  // *************************************************************************************
+
+  // Loop over all gated implant events in map and perform a beta match
+  for (auto gimp_evt = all_implants_map.begin(); gimp_evt != all_implants_map.end(); gimp_evt++){
+    
+    // Unpack event variables for current gated implant event
+    auto [x, y, e, ex, ey, spill, bplast, dssd, type] = gimp_evt->second;
+
+    // Continue loop only if gated implant occured in DSSSD 1 (AIDA)
+    if (type == IMPLANT && dssd == constants::DSSD){
+
+      // Check noisy implant channel strips and skip
+      if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
+      if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_IMPLANT, y) ){ continue; }
+
+      int implantbeta_candidate_counter = 0; // Reset counter to check all beta candidates
+      
+      last_gatedimplant_time = gimp_evt->first; // Unpack white rabbit time of gated implant
+
+      // Set gated implant position
+      gatedimplant_pos_x = x;
+      gatedimplant_pos_y = y;
+
+      // *************************************************************************************
+      // ****************************** LOOP OVER VALID DECAYS *******************************
+      // *************************************************************************************
+
+      // Find the decay event corresponding to the start of our decay loop using our time window
+      // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
+      auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 50000);
+      auto decay_end = good_decays_map.lower_bound(last_gatedimplant_time + max_deadtime_window);
+
+      // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
+      for(auto decay_evt = decay_start; decay_evt != decay_end; decay_evt++){
+  
+        // Break out of loop if decay events are now outside of time window
+        if ( decay_evt->first > last_gatedimplant_time + max_deadtime_window ){ break; }
+
+        // Unpack event variables for current decay event
+        auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_dssd, decay_spill, decay_type] = decay_evt->second;
+
+        // Skip if not from correct DSSD
+        if ( decay_dssd != constants::DSSD) { continue; }
+
+        // Check for noisy decay branch strips and skip
+        if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
+        if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_DECAY, decay_y) ){ continue; }
+
+        // Check if decay event is onspill and skip if defined by user and is from desired dssd
+        if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
+        
+        // Find time difference between implant event and decay event
+        Long64_t time_diff = decay_evt->first - last_gatedimplant_time;
+        double impdecay_dx = decay_x - gatedimplant_pos_x; 
+        double impdecay_dy = decay_y - gatedimplant_pos_y; 
+
+        // Draw Hists
+        h2_impdecay_deadtime_hitpattern_leq_500e6->Fill(impdecay_dx, impdecay_dy);
+        if (time_diff > 490050000) { h2_impdecay_deadtime_hitpattern_union_500e6->Fill(impdecay_dx, impdecay_dy);}
+        
+      } // End of decay event loop
+      
+    }
+
+  } // End of gated implant event loop
     
   // *************************************************************************************
   // ****************************** PRINT OUT STATISTICS *********************************
@@ -484,6 +697,32 @@ void implantDecayHists(const char* input, const char* output){
   sh1_gatedimplant_energy->Add(h1_gatedimplant_energy_punchthrough);
   sh1_gatedimplant_energy->Add(h1_gatedimplant_energy_stopped);
 
+  
+  // *************************************************************************************
+  // ****************************** MAKE AIDA DX DY PROJECTION HISTOS ********************
+  // *************************************************************************************
+  TH1F* h1_impdecay_deadtime_50e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_50e3->ProjectionX("impdecay_deadtime_50e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (0e3 <= dT <= 50e3 ns)");
+  TH1F* h1_impdecay_deadtime_100e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_100e3->ProjectionX("impdecay_deadtime_100e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (50e3 <= dT <= 100e3 ns)");
+  TH1F* h1_impdecay_deadtime_150e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_150e3->ProjectionX("impdecay_deadtime_150e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (100e3 <= dT <= 150e3 ns)");
+  TH1F* h1_impdecay_deadtime_200e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_200e3->ProjectionX("impdecay_deadtime_200e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (150e3 <= dT <= 200e3 ns)");
+  TH1F* h1_impdecay_deadtime_250e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_250e3->ProjectionX("impdecay_deadtime_250e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (200e3 <= dT <= 250e3 ns)");
+  TH1F* h1_impdecay_deadtime_300e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_300e3->ProjectionX("impdecay_deadtime_300e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (250e3 <= dT <= 300e3 ns)");
+  TH1F* h1_impdecay_deadtime_350e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_350e3->ProjectionX("impdecay_deadtime_350e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (300e3 <= dT <= 350e3 ns)");
+  TH1F* h1_impdecay_deadtime_400e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_400e3->ProjectionX("impdecay_deadtime_400e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (350e3 <= dT <= 400e3 ns)");
+  TH1F* h1_impdecay_deadtime_450e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_450e3->ProjectionX("impdecay_deadtime_450e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (400e3 <= dT <= 450e3 ns)");
+  TH1F* h1_impdecay_deadtime_500e3_xproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_500e3->ProjectionX("impdecay_deadtime_500e3_xproj", 128-10, 128+10, "Implant - Decay dX vs dY X-Projection (450e3 <= dT <= 500e3 ns)");
+
+  TH1F* h1_impdecay_deadtime_50e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_50e3->ProjectionY("impdecay_deadtime_50e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (0e3 <= dT <= 50e3 ns)");
+  TH1F* h1_impdecay_deadtime_100e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_100e3->ProjectionY("impdecay_deadtime_100e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (50e3 <= dT <= 100e3 ns)");
+  TH1F* h1_impdecay_deadtime_150e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_150e3->ProjectionY("impdecay_deadtime_150e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (100e3 <= dT <= 150e3 ns)");
+  TH1F* h1_impdecay_deadtime_200e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_200e3->ProjectionY("impdecay_deadtime_200e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (150e3 <= dT <= 200e3 ns)");
+  TH1F* h1_impdecay_deadtime_250e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_250e3->ProjectionY("impdecay_deadtime_250e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (200e3 <= dT <= 250e3 ns)");
+  TH1F* h1_impdecay_deadtime_300e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_300e3->ProjectionY("impdecay_deadtime_300e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (250e3 <= dT <= 300e3 ns)");
+  TH1F* h1_impdecay_deadtime_350e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_350e3->ProjectionY("impdecay_deadtime_350e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (300e3 <= dT <= 350e3 ns)");
+  TH1F* h1_impdecay_deadtime_400e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_400e3->ProjectionY("impdecay_deadtime_400e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (350e3 <= dT <= 400e3 ns)");
+  TH1F* h1_impdecay_deadtime_450e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_450e3->ProjectionY("impdecay_deadtime_450e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (400e3 <= dT <= 450e3 ns)");
+  TH1F* h1_impdecay_deadtime_500e3_yproj = (TH1F*)h2_impdecay_deadtime_hitpattern_union_500e3->ProjectionY("impdecay_deadtime_500e3_yproj", 384-10, 384+10, "Implant - Decay dX vs dY Y-Projection (450e3 <= dT <= 500e3 ns)");
+
   // *************************************************************************************
   // ****************************** WRITE HISTOGRAMS TO OUTPUT FILE **********************
   // *************************************************************************************
@@ -500,6 +739,9 @@ void implantDecayHists(const char* input, const char* output){
 
   h2_implant_xy_energy->Write();
   h2_decay_xy_energy->Write();
+
+  h2_decay_xy->Write();
+  h2_implant_xy->Write();
 
   h1_implant_energy_all->Write();
   h1_implant_energy_punchthrough->Write();
@@ -524,9 +766,68 @@ void implantDecayHists(const char* input, const char* output){
 
   h2_decay_energy_de_dt->Write();
 
-  h2_implant_xy->Write();
-  h2_implant_interuption_pixels->Write();
-  h1_implant_interuption_dt->Write();
+  h2_gimplant_xy->Write();
+  h2_gimplant_interuption_pixels->Write();
+  h1_gimplant_interuption_dt->Write();
+
+  TDirectory* leqImpdecayDeadtime = outputFile->mkdir("impdecay_deadtime_leq");
+  leqImpdecayDeadtime->cd();
+  h2_impdecay_deadtime_hitpattern_leq_500e6->Write();
+  h2_impdecay_deadtime_hitpattern_leq_500e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_450e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_400e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_350e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_300e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_250e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_200e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_150e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_100e3->Write();
+  h2_impdecay_deadtime_hitpattern_leq_50e3->Write();
+  gFile->cd();
+
+  TDirectory* unionImpdecayDeadtime = outputFile->mkdir("impdecay_deadtime_union");
+  unionImpdecayDeadtime->cd();
+  h2_impdecay_deadtime_hitpattern_union_500e6->Write();
+  h2_impdecay_deadtime_hitpattern_union_500e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_450e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_400e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_350e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_300e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_250e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_200e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_150e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_100e3->Write();
+  h2_impdecay_deadtime_hitpattern_union_50e3->Write();
+  gFile->cd();
+
+
+  TDirectory* impdecayDeadtimeXProj = outputFile->mkdir("impdecay_deadtime_xproj");
+  impdecayDeadtimeXProj->cd();
+  h1_impdecay_deadtime_50e3_xproj->Write();
+  h1_impdecay_deadtime_100e3_xproj->Write();
+  h1_impdecay_deadtime_150e3_xproj->Write();
+  h1_impdecay_deadtime_200e3_xproj->Write();
+  h1_impdecay_deadtime_250e3_xproj->Write();
+  h1_impdecay_deadtime_300e3_xproj->Write();
+  h1_impdecay_deadtime_350e3_xproj->Write();
+  h1_impdecay_deadtime_400e3_xproj->Write();
+  h1_impdecay_deadtime_450e3_xproj->Write();
+  h1_impdecay_deadtime_500e3_xproj->Write();
+  gFile->cd();
+
+  TDirectory* impdecayDeadtimeYProj = outputFile->mkdir("impdecay_deadtime_yproj");
+  impdecayDeadtimeYProj->cd();
+  h1_impdecay_deadtime_50e3_yproj->Write();
+  h1_impdecay_deadtime_100e3_yproj->Write();
+  h1_impdecay_deadtime_150e3_yproj->Write();
+  h1_impdecay_deadtime_200e3_yproj->Write();
+  h1_impdecay_deadtime_250e3_yproj->Write();
+  h1_impdecay_deadtime_300e3_yproj->Write();
+  h1_impdecay_deadtime_350e3_yproj->Write();
+  h1_impdecay_deadtime_400e3_yproj->Write();
+  h1_impdecay_deadtime_450e3_yproj->Write();
+  h1_impdecay_deadtime_500e3_yproj->Write();
+  gFile->cd();
 
   std::cout << "Finished writing the histograms" << std::endl;
 
