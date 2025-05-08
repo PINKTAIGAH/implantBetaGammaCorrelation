@@ -680,25 +680,6 @@ void ionbeta(const char* input, const char* output){
             break;
           }
 
-          // // Check that there has not been a forward beta candidate that has been matched to implant event
-          // if (!found_forward_match){
-          //   matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
-          //   found_forward_match = true; // Change flag for succesfull forward implant decay match
-          //   beta_type = MATCH; // Overwrite beta_type
-          // }
-
-          // // Check that there has aalready been one decay that has been matched to implant event
-          // if (found_forward_match && !found_forward_second_match){
-          //   found_forward_second_match = true; // Change flag for succesfull forward implant decay match
-          //   beta_type = SECOND_MATCH; // Overwrite beta_type
-          // }
-
-          // // Check that there has aalready been two decay that has been matched to implant event
-          // if (found_forward_match && found_forward_second_match && !found_forward_third_match){
-          //   found_forward_third_match = true; // Change flag for succesfull forward implant decay match
-          //   beta_type = THIRD_MATCH; // Overwrite beta_type
-          // }
-
           // Add beta data to the vector
           beta_candidate_data_vector.emplace_back( std::make_tuple(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e) );
 
@@ -746,25 +727,6 @@ void ionbeta(const char* input, const char* output){
             // No longer tracking any matches
             break;
           }
-
-          // // Check that there has not been a backwards beta candidate that has been matched to implant event
-          // if (!found_backward_match){
-          //   matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
-          //   found_backward_match = true; // Change flag for succesfull backward implant decay match
-          //   beta_type = MATCH; // Overwrite beta_type
-          // }
-
-          // // Check that there has aalready been one decay that has been matched to implant event
-          // if (found_backward_match && !found_backward_second_match){
-          //   found_backward_second_match = true; // Change flag for succesfull forward implant decay match
-          //   beta_type = SECOND_MATCH; // Overwrite beta_type
-          // }
-
-          // // Check that there has aalready been two decay that has been matched to implant event
-          // if (found_backward_match && found_backward_second_match && !found_backward_third_match){
-          //   found_backward_third_match = true; // Change flag for succesfull forward implant decay match
-          //   beta_type = THIRD_MATCH; // Overwrite beta_type
-          // }
 
           // Add beta data to the vector
           beta_candidate_data_vector.emplace_back( std::make_tuple(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e) );
