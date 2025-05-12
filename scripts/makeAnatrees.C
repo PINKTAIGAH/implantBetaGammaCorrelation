@@ -32,11 +32,14 @@ namespace constants{
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
     // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb_bb7.root"},
     // {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr_bb7.root"}
-    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
-    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
-    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
-    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
-    {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
+
+    // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
+    // {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
+    // {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
+    // {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
+    // {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
+
+    {"70br", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/70br.root"}
   };
 
 }
