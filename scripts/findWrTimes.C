@@ -15,7 +15,7 @@ void findWrTimes(const char* input){
   TTreeReader reader(tree);
 
   // Create tree reader values for the branches you want to read
-  TTreeReaderArray<long long> frs_time(reader, "FrsHitData.fwr_t");
+  TTreeReaderArray<long long> time(reader, "bPlastTwinpeaksCalData.fwr_t");
 
   // Define the counter
   int counter = 0;
@@ -24,14 +24,21 @@ void findWrTimes(const char* input){
 
   const char spinner[] = {'-', '\\', '|', '/'};
   int totalEntries = reader.GetEntries(true);
+  bool jumpedToEnd = false;
 
   // Loop over all the entries in the new tree
   while (reader.Next()){
 
-    int frshits = frs_time.GetSize();
+    int hits = time.GetSize();
 
-    if (frshits>0 && wr_start==0 ){ wr_start = frs_time[0]; }
-    if ( frshits>0 ){ wr_end = frs_time[0]; }
+    if (hits>0 && wr_start==0 ){ wr_start = time[0]; }
+    if ( hits>0 ){ wr_end = time[0]; }
+
+    // Change entry to last 1000 entries if start time is assigned and we havent aready jumped
+    if ( !jumpedToEnd && wr_start!=0 ){
+      reader.SetEntry(totalEntries-1000);
+      jumpedToEnd = true;
+    }
 
     // Show the progress of the loop
     if (reader.GetCurrentEntry() % 100000 == 0) {

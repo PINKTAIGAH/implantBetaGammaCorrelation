@@ -38,12 +38,12 @@ namespace constants{
   const int TOTAL_FEES = 16; // Number of FEES in AIDA DAQ
 
   const std::map<std::string, std::string> IMPLANT_GATES_INFILE_MAP = {
-    // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
-    // {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
-    // {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
-    // {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
-    // {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
-    {"70br", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/70br.root"}
+    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
+    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
+    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
+    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
+    {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
+    // {"70br", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/70br.root"}
   };
 
   const int DSSD = 1;
@@ -283,23 +283,29 @@ void eventwiseHists(const char* input, const char* output) {
   // *************************************************************************************
 
   // Initialise time variables
+  int totalEntries = reader.GetEntries(true);
   ULong_t wr_start = 1.7401830e+18;
   ULong_t wr_end = 1.74022529e+18;
+  bool jumpedToEnd = false;
 
-  /*std::cout << "Finding file white rabbit times ..." << std::endl;*/
-  /**/
-  /*// Loop over all the entries in the new tree*/
-  /*while (reader.Next()){*/
-  /**/
-  /*  int frshits = frs_time.GetSize();*/
-  /**/
-  /*  if (frshits>0 && wr_start==0 ){ wr_start = frs_time[0]; }*/
-  /*  if ( frshits>0 ){ wr_end = frs_time[0]; }*/
-  /*}*/
-  /**/
-  /*reader.Restart(); // Reset reader for next loop*/
-  /**/
-  /*// Find white rabbit time difference of experiments*/
+  // // Loop over all the entries in the new tree
+  // while (reader.Next()){
+  
+  //   int germHits = germanium_time.GetSize();
+    
+  //   // Assign times
+  //   if (germHits>0 && wr_start==0 ){ wr_start = germanium_time[0]; }
+  //   if (germHits>0){ wr_end = germanium_time[germHits-1]; }
+
+  //   // Change entry to last 1000 entries if start time is assigned and we havent aready jumped
+  //   if ( !jumpedToEnd && wr_start!=0 ){
+  //     reader.SetEntry(totalEntries-1000);
+  //     jumpedToEnd = true;
+  //   }
+  // }
+
+  // reader.Restart();
+
   ULong_t wr_dt = wr_end - wr_start;
 
   std::cout << "Found file white rabbit times!" << std::endl;
@@ -360,6 +366,11 @@ void eventwiseHists(const char* input, const char* output) {
   // Gated implant position in s4 vs aida position
   std::map<std::string, TH2F*> h2_aida_gatedimplant_s4x_vs_aidax_map = {};
   std::map<std::string, TH2F*> h2_aida_gatedimplant_s4y_vs_aiday_map = {};
+
+  // Gated implants on sci42 energies
+  std::map<std::string, TH2F*> h2_aida_gatedimplant_z41_vs_sci42e_map = {};
+  std::map<std::string, TH2F*> h2_aida_gatedimplant_sci41e_vs_sci42e_map = {};
+
   
   // Loop over all gated implants and fill map
   for (auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
@@ -389,6 +400,18 @@ void eventwiseHists(const char* input, const char* output) {
     TH2F* h2_aida_gatedimplant_s4y_vs_aiday = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 1000, -100, 100, 128, 0, 128);
     h2_aida_gatedimplant_s4y_vs_aiday_map.emplace(gatedimplant_name, h2_aida_gatedimplant_s4y_vs_aiday);
 
+    // Make histogram of z41 vs sci42 e for each gated implant
+    histogram_name = "aida_" + gatedimplant_name + "_z41_vs_sci42e";
+    histogram_title = "AIDA " + gatedimplant_name + " Z41 vs Sci42 Energy";
+    TH2F* h2_aida_gatedimplant_z41_vs_sci42e = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 1000, 0, 3000, 1000, 30, 50);
+    h2_aida_gatedimplant_z41_vs_sci42e_map.emplace(gatedimplant_name, h2_aida_gatedimplant_z41_vs_sci42e);
+
+    // Make histogram of sci41e vs sci42 e for each gated implant
+    histogram_name = "aida_" + gatedimplant_name + "_sci41e_vs_sci42e";
+    histogram_title = "AIDA " + gatedimplant_name + " Sci41 Energy vs Sci42 Energy";
+    TH2F* h2_aida_gatedimplant_sci41e_vs_sci42e = new TH2F(histogram_name.c_str(), histogram_title.c_str(), 1000, 0, 3000, 1000, 0, 3000);
+    h2_aida_gatedimplant_sci41e_vs_sci42e_map.emplace(gatedimplant_name, h2_aida_gatedimplant_sci41e_vs_sci42e);
+
   }
 
   // FRS histograms
@@ -412,7 +435,9 @@ void eventwiseHists(const char* input, const char* output) {
   TH1F* h1_germanium_spectra_all = new TH1F("germanium_spectra_all", "Gamma spectra (All summed)", 1500, 0, 1500);
 
   // Plot Decay-Germanium coincidence
-  TH1F* h1_decay_germanium_dt = new TH1F("decay_germanium_dt", "AIDA Decay - DEGAS time difference", 50000, -100e3, 100e3);
+  TH1F* h1_decay_germanium_dt_timestiched = new TH1F("decay_germanium_dt_timestiched", "AIDA Decay - DEGAS time difference", 2000, -60e3, 60e3);
+  TH1F* h1_decay_germanium_dt_timestiched_ilook10 = new TH1F("decay_germanium_dt_timestiched_ilook10", "AIDA Decay - DEGAS time difference (Lookahead 10)", 2000, -60e3, 60e3);
+  TH1F* h1_decay_germanium_dt_timestiched_ilook20 = new TH1F("decay_germanium_dt_timestiched_ilook20", "AIDA Decay - DEGAS time difference (Lookahead 20)", 2000, -60e3, 60e3);
 
   // Plot Decay event size
   TH1F* h1_decay_event_size = new TH1F("decay_event_size", "AIDA Decay Event Size", 10000, -40e3, 40e3);
@@ -422,7 +447,6 @@ void eventwiseHists(const char* input, const char* output) {
   // *************************************************************************************
 
   const char spinner[] = {'-', '\\', '|', '/'};
-  int totalEntries = reader.GetEntries(true);
 
 
   // Loop over all entries in the old tree
@@ -613,6 +637,9 @@ void eventwiseHists(const char* input, const char* output) {
             std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
             std::vector<float> const& SX4 = frs_multi_item.Get_ID_s4x_mhtdc();
             Long64_t const& frs_wr = frs_item.Get_wr_t();
+            Float_t const& frs_sci42e = frs_item.Get_sci_e_42();
+            Float_t const& frs_sci41e = frs_item.Get_sci_e_41();
+            Float_t const& frs_z41 = frs_item.Get_ID_z41();
             
             //  Skip frs subevents where implant index wouldbe out of bounds
             for(int i =0; i<AoQ.size(); i++){
@@ -658,6 +685,12 @@ void eventwiseHists(const char* input, const char* output) {
 
                       // Fill s4 position vs aida posiiton
                       h2_aida_gatedimplant_s4x_vs_aidax_map[gimp_key]->Fill(s4x, implant_x[j]);
+
+                      // Fill sci42e vs sci41e
+                      h2_aida_gatedimplant_sci41e_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_sci41e);
+                      
+                      // Fill sci42e vs Z41 
+                      h2_aida_gatedimplant_z41_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_z41);
 
                       gatedimplant_counter_map[gimp_key]++; // Increase counter
 
@@ -822,30 +855,38 @@ void eventwiseHists(const char* input, const char* output) {
     // *************************************************************************************
 
     if (aidadecayhits > 0 && germaniumhits > 0 ){
-      
       for (int i = 0; i < aidadecayhits; i++){
-
         if ( decay_dssd[i]==1 && TMath::Abs(decay_time[aidadecayhits -1] - decay_time[0]) < 33000 && TMath::Abs(decay_time_y[i]-decay_time_x[i])<1e3 && TMath::Abs(decay_energy_x[i]-decay_energy_x[i])<168 && decay_energy[i]>150 & decay_energy[i]<1000 ){
-
           for (int j = 0; j < germaniumhits; j++){
-
             if (germanium_det[j] <= 15 && germanium_cry[j] <= 2 && germanium_energy[j] > 0 ){
-
-              //************* DEBUG **************
-              // std::cout << "[DEBUG] decay_t - germ_t = " << (decay_time[i] - germanium_time[j])*1e-9 << " seconds  ####### decay_t - germ_abs_evt_t = " << (germanium_time[j] - germanium_abs_ev_time[j])*1e-9 << " seconds" << std::endl;
-              //************* DEBUG **************
-
-              h1_decay_germanium_dt->Fill(decay_time[i]-germanium_time[j]);
-
+              h1_decay_germanium_dt_timestiched->Fill(decay_time[i]-germanium_time[j]);
             }
-
           }
-
         }
-
       }
-      
     }
+
+    if (aidadecayhits>0 && germaniumhits>0){
+      for (int ilook=current_entry-10; ilook<current_entry+10; ++ilook){
+        if (ilook<0 || ilook>totalEntries-1) continue;
+        reader.SetEntry(ilook);
+        for (int idxDecay=0; idxDecay<aidadecayhits; ++idxDecay){
+          if ( decay_dssd[idxDecay]==1 && TMath::Abs(decay_time[aidadecayhits-1] - decay_time[0]) < 7000 && TMath::Abs(decay_time_y[idxDecay]-decay_time_x[idxDecay])<1e3 && TMath::Abs(decay_energy_x[idxDecay]-decay_energy_x[idxDecay])<168 && decay_energy[idxDecay]>150 & decay_energy[idxDecay]<1000 ){
+            int64_t ilook_decay_time = decay_time[idxDecay];
+            reader.SetEntry(current_entry);
+            for (int idxGamma=0; idxGamma<germaniumhits; ++idxGamma){
+              if (germanium_det[idxGamma] <= 15 && germanium_cry[idxGamma] <= 2 && germanium_energy[idxGamma] > 20. ){
+                if (TMath::Abs(ilook) < 10) h1_decay_germanium_dt_timestiched_ilook10->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook) < 20) h1_decay_germanium_dt_timestiched_ilook20->Fill(ilook_decay_time-germanium_time[idxGamma]);
+              }
+            }
+          }
+        }
+        reader.SetEntry(ilook);
+      }
+    }
+
+    reader.SetEntry(current_entry);
 
 
     // *************************************************************************************
@@ -934,6 +975,25 @@ void eventwiseHists(const char* input, const char* output) {
     itr.second->Write();
   }
   gFile->cd();
+
+  TDirectory* frsGatedImplantsDir = outputFile->mkdir("aida_gated_frs");
+  frsGatedImplantsDir->cd();
+  // Write implant x s4 pos vs aida pos 
+  for (auto itr : h2_aida_gatedimplant_s4x_vs_aidax_map){
+    itr.second->Write();
+  }
+  // // Write implant y s4 pos vs aida pos 
+  // for (auto itr : h2_aida_gatedimplant_s4y_vs_aiday_map){
+  //   itr.second->Write();
+  // }
+  // Write implant x s4 pos vs aida pos 
+  for (auto itr : h2_aida_gatedimplant_sci41e_vs_sci42e_map){
+    itr.second->Write();
+  }
+  for (auto itr : h2_aida_gatedimplant_z41_vs_sci42e_map){
+    itr.second->Write();
+  }
+  gFile->cd();
   
   // Write dataitem multiplicities
   h2_aida_lec_xy_multiplicity->Write();
@@ -951,15 +1011,6 @@ void eventwiseHists(const char* input, const char* output) {
     itr.second->Write();
   }
 
-  // Write implant x s4 pos vs aida pos 
-  for (auto itr : h2_aida_gatedimplant_s4x_vs_aidax_map){
-    itr.second->Write();
-  }
-
-  // // Write implant y s4 pos vs aida pos 
-  // for (auto itr : h2_aida_gatedimplant_s4y_vs_aiday_map){
-  //   itr.second->Write();
-  // }
 
   // Write decay event multiplicity
   h1_aida_decay_multiplicity_allspill->Write();
@@ -979,7 +1030,9 @@ void eventwiseHists(const char* input, const char* output) {
 
   // Write gamma plots
   h1_germanium_spectra_all->Write();
-  h1_decay_germanium_dt->Write();
+  h1_decay_germanium_dt_timestiched->Write();
+  h1_decay_germanium_dt_timestiched_ilook10->Write();
+  h1_decay_germanium_dt_timestiched_ilook20->Write();
 
 
   // *************************************************************************************

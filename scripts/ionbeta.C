@@ -34,6 +34,7 @@ namespace constants{
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
   const bool VETO_INTERRUPTED_IMPLANTS = false; // Veto any implant which has a subsequent implant occure within time and position window
   /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
+  const bool ALL_IMPLANTS_DECAY_MATCH = false; // Look at impdecay matches for all implants aswell
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
   const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
@@ -41,8 +42,8 @@ namespace constants{
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const uint64_t IMPLANT_DEAD_TIME = 350e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
-  const int BETA_CANDIDATE_CUT = 1; // Define number of candidate betas a implant must have before plotting
-  const int BETA_GAMMA_CANDIDATE_CUT = 40;
+  const int BETA_CANDIDATE_CUT = 5; // Define number of candidate betas a implant must have before plotting
+  const int BETA_GAMMA_CANDIDATE_CUT = 5;
 
   // const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { 13229, 17991 };
   const std::pair<int64_t, int64_t> PROMPT_GAMMA_WINDOW = { -18200, -12900 };
@@ -270,7 +271,8 @@ std::multimap<int64_t, std::tuple<double, double, double, double, double, int, i
 std::multimap<int64_t, std::tuple<double, double, double, double, double, int, int, int, InterruptedCoincidenceType>> all_implants_map;
 std::multimap<int64_t, std::tuple<double, double, double, double, double, int, int, int>> good_decays_map;
 // std::multimap<int64_t, std::pair<std::pair<int, int>, std::vector<std::tuple<CorrelationType, BetaType, int64_t, int64_t, double, double, double, double, double, double> > > > matched_decays_map;
-std::multimap<int64_t, ImplantDecayInfo> matched_decays_map;
+std::multimap<int64_t, ImplantDecayInfo> gated_matched_decays_map;
+std::multimap<int64_t, ImplantDecayInfo> all_matched_decays_map;
 std::multimap<int64_t, std::tuple<double, int>> germanium_map;
 
 
@@ -375,6 +377,7 @@ void ionbeta(const char* input, const char* output){
   TH1F* h1_implantbeta_candidate_multiplicity_forwards = new TH1F("implantbeta_candidate_multiplicity_forwards", "Implant-Decay Forwards Candidate Multiplicity; Candidate Multiplicity; Counts", 100, 0, 100);
   TH1F* h1_implantbeta_candidate_multiplicity_backwards = new TH1F("implantbeta_candidate_multiplicity_backwards", "Implant-Decay Backwards Candidate Multiplicity; Candidate Multiplicity; Counts", 100, 0, 100);
 
+  // HIST^O
   // Histograms for betaGamma correlations
   TH1F* h1_gamma_spectrum = new TH1F("gamma_spectrum", "Gamma Energy Spectrum ; Energy (keV); Counts/keV", 2000, 0, 2000);
   TH1F* h1_implantbetagamma_spectrum_before_ionbeta = new TH1F("implantbetagamma_spectrum_before_ionbeta", "Beta-Gamma Energy Spectrum (all); Energy (keV); Counts/keV", 2000, 0, 2000);
@@ -382,18 +385,40 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_implantbetagamma_spectrum_before_ionbeta_dt_energy = new TH2F("h2_implantbetagamma_spectrum_before_ionbeta_dt_energy", "Time between beta decay and gamma ray vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
 
   // Histograms for implant-beta-gamma backward correlated events
-  TH1F* h1_implantbetagamma_spectrum_after_ionbeta_backwardmatch = new TH1F("implantbetagamma_spectrum_after_ionbeta_backwardmatch", "Implant-Beta-Gamma Energy Spectrum (backward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
-  TH1F* h1_implantbetagamma_spectrum_after_ionbeta_dt_backwardmatch = new TH1F("implantbetagamma_spectrum_after_ionbeta_dt_backwardmatch", "Time between beta decay and gamma ray backward match; Time (ns); Counts", 5000, -600e6, -500e6);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch", "Time between beta decay and gamma ray backward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_square_backwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_square_backwardmatch", "implantbetagamma_spectrum_after_ionbeta_square_backwardmatch", 2000,0,2000,2000,0,2000);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", "implantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", 2000,0,2000,200,-100,100);
-
+  TH1F* h1_gatedimplantbetagamma_spectrum_after_ionbeta_backwardmatch = new TH1F("gatedimplantbetagamma_spectrum_after_ionbeta_backwardmatch", "Implant-Beta-Gamma Energy Spectrum (backward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH2F* h2_gatedimplantbetagamma_energy_vs_decaystrip_backwardmatch = new TH2F("gatedimplantbetagamma_energy_vs_decaystrip_backwardmatch", "Matched Gamma Energy vs Decay Strip (X then Y);Strip;Energy (keV)", 528, 0, 528, 2000, 0, 2000);
+  TH1F* h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch = new TH1F("gatedimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch", "Time between beta decay and gamma ray backward match; Time (ns); Counts", 2000, -20000, 2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch", "Time between beta decay and gamma ray backward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch", "gatedimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch", 2000,0,2000,2000,0,2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", "gatedimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", 2000,0,2000,200,-100,100);
   // Histograms for implant-beta-gamma firward correlated events
-  TH1F* h1_implantbetagamma_spectrum_after_ionbeta_forwardmatch = new TH1F("implantbetagamma_spectrum_after_ionbeta_forwardmatch", "Implant-Beta-Gamma Energy Spectrum (forward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
-  TH1F* h1_implantbetagamma_spectrum_after_ionbeta_dt_forwardmatch = new TH1F("implantbetagamma_spectrum_after_ionbeta_dt_forwardmatch", "Time between beta decay and gamma ray forward match; Time (ns); Counts", 2000, -20000, 2000);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch", "Time between beta decay and gamma ray Forward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_square_forwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_square_forwardmatch", "implantbetagamma_spectrum_after_ionbeta_square_forwardmatch", 2000,0,2000,2000,0,2000);
-  TH2F* h2_implantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch = new TH2F("implantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", "implantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", 2000,0,2000,200,-100,100);
+  TH1F* h1_gatedimplantbetagamma_spectrum_after_ionbeta_forwardmatch = new TH1F("gatedimplantbetagamma_spectrum_after_ionbeta_forwardmatch", "Implant-Beta-Gamma Energy Spectrum (forward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH2F* h2_gatedimplantbetagamma_energy_vs_decaystrip_forwardmatch = new TH2F("gatedimplantbetagamma_energy_vs_decaystrip_forwardmatch", "Matched Gamma Energy vs Decay Strip (X then Y);Strip;Energy (keV)", 528, 0, 528, 2000, 0, 2000);
+  TH1F* h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch = new TH1F("gatedimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch", "Time between beta decay and gamma ray forward match; Time (ns); Counts", 2000, -20000, 2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch", "Time between beta decay and gamma ray Forward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch", "gatedimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch", 2000,0,2000,2000,0,2000);
+  TH2F* h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch = new TH2F("gatedimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", "gatedimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", 2000,0,2000,200,-100,100);
+
+  // Histograms for implant-beta-gamma backward correlated events
+  TH1F* h1_allimplantbetagamma_spectrum_after_ionbeta_backwardmatch = new TH1F("allimplantbetagamma_spectrum_after_ionbeta_backwardmatch", "Implant-Beta-Gamma Energy Spectrum (backward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH2F* h2_allimplantbetagamma_energy_vs_decaystrip_backwardmatch = new TH2F("allimplantbetagamma_energy_vs_decaystrip_backwardmatch", "Matched Gamma Energy vs Decay Strip (X then Y);Strip;Energy (keV)", 528, 0, 528, 2000, 0, 2000);
+  TH1F* h1_allimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch = new TH1F("allimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch", "Time between beta decay and gamma ray backward match; Time (ns); Counts", 2000, -20000, 2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch", "Time between beta decay and gamma ray backward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch", "allimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch", 2000,0,2000,2000,0,2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", "allimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch", 2000,0,2000,200,-100,100);
+  // Histograms for implant-beta-gamma firward correlated events
+  TH1F* h1_allimplantbetagamma_spectrum_after_ionbeta_forwardmatch = new TH1F("allimplantbetagamma_spectrum_after_ionbeta_forwardmatch", "Implant-Beta-Gamma Energy Spectrum (forward ionbeta matched)); Energy (keV); Counts/keV", 2000, 0, 2000);
+  TH2F* h2_allimplantbetagamma_energy_vs_decaystrip_forwardmatch = new TH2F("allimplantbetagamma_energy_vs_decaystrip_forwardmatch", "Matched Gamma Energy vs Decay Strip (X then Y);Strip;Energy (keV)", 528, 0, 528, 2000, 0, 2000);
+  TH1F* h1_allimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch = new TH1F("allimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch", "Time between beta decay and gamma ray forward match; Time (ns); Counts", 2000, -20000, 2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch", "Time between beta decay and gamma ray Forward Match vs energy (keV); Time (ns); Energy (keV); Counts", 500, -20e3, 2e3,2000,0,2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch", "allimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch", 2000,0,2000,2000,0,2000);
+  TH2F* h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch = new TH2F("allimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", "allimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch", 2000,0,2000,200,-100,100);
+
+  // Histograms for forward backwards matche
+  TH2F* h2_gatedimplantbetagamma_betagamma_dt_vs_implantbeta_dt = new TH2F("gatedimplantbetagamma_betagamma_dt_vs_implantbeta_dt", "Implant-Beta-Gamma ImplantBeta dt vs BetaGamma dt;betagamma dt (ns); ionbeta dt(ns)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD, 1000, -20, 2e3);
+  TH2F* h2_gatedimplantbetagamma_gammaenergy_vs_implantbeta_dt = new TH2F("gatedimplantbetagamma_gammaenergy_dt_vs_implantbeta_dt", "Implant-Beta-Gamma ImplantBeta dt vs Gamma energy;betagamma dt (ns); Energy (keV)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD, 2000, 0, 2000);
+  TH2F* h2_allimplantbetagamma_betagamma_dt_vs_implantbeta_dt = new TH2F("allimplantbetagamma_betagamma_dt_vs_implantbeta_dt", "Implant-Beta-Gamma ImplantBeta dt vs BetaGamma dt;betagamma dt (ns); ionbeta dt(ns)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD, 1000, -20, 2e3);
+  TH2F* h2_allimplantbetagamma_gammaenergy_vs_implantbeta_dt = new TH2F("allimplantbetagamma_gammaenergy_dt_vs_implantbeta_dt", "Implant-Beta-Gamma ImplantBeta dt vs Gamma energy;betagamma dt (ns); Energy (keV)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD, 2000, 0, 2000);
 
   // Correlate forward implant-decay dt with other observables
   TH2F* h2_implant_energy_dt_forward = new TH2F("implant_energy_dt_forward", "Implant Energy vs Implant-Decay dt", 7000/20, 0, 7000, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
@@ -642,7 +667,7 @@ void ionbeta(const char* input, const char* output){
   // ****************** ION-BETA MATCHING ****** LOOP OVER GATED IMPLANTS ****************
   // *************************************************************************************
 
-  std::cout << "Started Implant-Decay matching routine..." << std::endl;
+  std::cout << "Started Gated Implant-Decay matching routine..." << std::endl;
 
   // Define & declare variebles to be used inside loop of gated implant events
   double gatedimplant_pos_x;
@@ -847,17 +872,232 @@ void ionbeta(const char* input, const char* output){
     } // End of decay event loop
 
     // Make implant-decay infor struct and fill it
-    ImplantDecayInfo implantDecayInfo;
-    implantDecayInfo.implantDecayMatchMultiplicities = std::make_pair(forwards_implantbeta_candidate_counter, backwards_implantbeta_candidate_counter);
-    implantDecayInfo.betaCandidateInfoVector = beta_candidate_data_vector;
+    ImplantDecayInfo gatedImplantDecayInfo;
+    gatedImplantDecayInfo.implantDecayMatchMultiplicities = std::make_pair(forwards_implantbeta_candidate_counter, backwards_implantbeta_candidate_counter);
+    gatedImplantDecayInfo.betaCandidateInfoVector = beta_candidate_data_vector;
     // Fill matched candidate map
-    matched_decays_map.emplace(last_gatedimplant_time, implantDecayInfo);
+    gated_matched_decays_map.emplace(last_gatedimplant_time, gatedImplantDecayInfo);
 
 
   } // End of gated implant event loop
 
-  std::cout << "Finalised Implant-Decay matching routine!" << std::endl << std::endl;
+  std::cout << "Finalised Gated Implant-Decay matching routine!" << std::endl << std::endl;
 
+
+
+  // *************************************************************************************
+  // ****************** ION-BETA MATCHING ****** LOOP OVER ALL IMPLANTS ****************
+  // *************************************************************************************
+  if (constants::ALL_IMPLANTS_DECAY_MATCH){
+
+
+    std::cout << "Started All Implant-Decay matching routine..." << std::endl;
+
+    // Flush vector for new beta candidates
+    beta_candidate_data_vector.clear();
+
+    // Loop over all gated implant events in map and perform a beta match
+    for (auto imp_evt = all_implants_map.begin(); imp_evt != all_implants_map.end(); imp_evt++){
+      
+      // Empty vector containing previous beta candidate
+      beta_candidate_data_vector.clear();
+
+      // Unpack event variables for current gated implant event
+      auto [x, y, e, ex, ey, spill, bplast, dssd, interruption_type] = imp_evt->second;
+
+      // Check noisy implant channel strips and skip
+      if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_IMPLANT, x) ){ continue; }
+      if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_IMPLANT, y) ){ continue; }
+
+      // Check if gated implant is interrupted
+      if (interruption_type == INTERRUPTED ){
+        h1_interrupted_implant_vetoed_decay_candidates_time->Fill(last_gatedimplant_time);
+        continue; 
+      }
+
+
+      // ************* DEBUG **************
+      // if ( e < 2000 ) { continue; } // Skip any possible throughgoing ion
+      // ************* DEBUG **************
+      
+      // Reset counter to check all beta candidates
+      forwards_implantbeta_candidate_counter = 0;     
+      backwards_implantbeta_candidate_counter = 0;     
+
+      // Reset flags for positive match in new loop
+      found_forward_match = false;
+      found_backward_match = false;
+
+      last_gatedimplant_time = imp_evt->first; // Unpack white rabbit time of gated implant
+
+      // Set gated implant position
+      gatedimplant_pos_x = x;
+      gatedimplant_pos_y = y;
+
+      h2_aida_implant_xy->Fill(x,y); // Fill Histogram with gated implant position
+
+      // *************************************************************************************
+      // ****************************** LOOP OVER VALID DECAYS *******************************
+      // *************************************************************************************
+
+      // Find the decay event corresponding to the start of our decay loop using our time window
+      // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
+      auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - constants::TIME_THRESHOLD);
+
+      // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
+      for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
+
+        // Break out of loop if decay events are now outside of time window
+        if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
+
+        // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
+        if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
+
+        // Unpack event variables for current decay event
+        auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_spill, decay_bplast, decay_dssd] = decay_evt->second;
+
+        // Check for noisy decay branch strips and skip
+        if ( isNoisyStrip(constants::BROKEN_AIDA_X_STRIPS_DECAY, decay_x) ){ continue; }
+        if ( isNoisyStrip(constants::BROKEN_AIDA_Y_STRIPS_DECAY, decay_y) ){ continue; }
+
+        // Check if decay event is onspill and skip if defined by user 
+        if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
+        
+        // Check if decay event is within position threshold
+        if ( TMath::Abs(decay_x - gatedimplant_pos_x) <= constants::POSITION_THRESHOLD && TMath::Abs(decay_y - gatedimplant_pos_y) <= constants::POSITION_THRESHOLD ){
+
+          // Find time difference between implant event and decay event
+          int64_t time_diff = decay_evt->first - last_gatedimplant_time;
+
+          // *************************************************************************************
+          // ****************************** FOUND FORWARD BETA CANDIDATE *************************
+          // *************************************************************************************
+
+          // Check if decay event falls within time threshold and decay event occures after implant event 
+          if (time_diff > 0 && time_diff < constants::TIME_THRESHOLD) {
+
+            // Check decay is outside implant promptflash
+            // if ( time_diff < 60e3 ){ continue; }
+
+            // Check if decay occures within a deadtime induced my implant in AIDA
+            if ( deadtimeWindowManager.contains(decay_evt->first) ){
+              h1_deadtime_implant_vetoed_decay_candidates_time->Fill(decay_evt->first);
+              std::cout << "Rejected a forwards ion-beta candidate due to implant deadtime." << std::endl;
+              continue; 
+            }
+            
+            forwards_implantbeta_candidate_counter++; // Increase counter for beta canditade event
+
+            BetaType beta_type = CANDIDATE; // Set tag for beta
+            CorrelationType correlation_type = FORWARDS; // Set tag for correlation type
+
+            switch (forwards_implantbeta_candidate_counter){
+            case 1: {
+              // First Match 
+              matched_implantdecays_counter++; // Increase counter for succesfull matched implant decay
+              found_forward_match = true; // Change flag for succesfull forward implant decay match
+              beta_type = MATCH; // Overwrite beta_type
+              break;
+            }
+            case 2: {
+              // Second Match 
+              beta_type = SECOND_MATCH; // Overwrite beta_type
+              break;
+            } 
+            case 3: {
+              // Third Match 
+              beta_type = THIRD_MATCH; // Overwrite beta_type
+              break;
+            } 
+            case 10: {
+              // Tenth Match 
+              beta_type = TENTH_MATCH; // Overwrite beta_type
+              break;
+            } 
+            default:
+              // No longer tracking any matches
+              break;
+            }
+
+            // Make new struct to contain match info and add parameters
+            BetaCandidateInfo matchedBetaInfo;
+            matchedBetaInfo.setBetaParameters(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e, decay_spill);
+            // Add beta data to the vector
+            beta_candidate_data_vector.emplace_back( matchedBetaInfo );
+
+          }
+
+          // *************************************************************************************
+          // ****************************** FOUND BACKWARD BETA CANDIDATE ************************
+          // *************************************************************************************
+
+          // Check if decay event falls within time threshold and decay event occures before implant event 
+          if (time_diff < 0 && -time_diff < constants::TIME_THRESHOLD) {
+
+            // Check if decay occures within a deadtime induced my implant in AIDA
+            if ( deadtimeWindowManager.contains(decay_evt->first) ){
+              std::cout << "Rejected backwards ion-beta candidate due to implant deadtime." << std::endl;
+              continue; 
+            }
+
+            backwards_implantbeta_candidate_counter++; // Increase counter for beta canditade event
+
+            BetaType beta_type = CANDIDATE; // Set tag for beta
+            CorrelationType correlation_type = BACKWARDS; // Set tag for correlation type
+
+            switch (backwards_implantbeta_candidate_counter){
+            case 1: {
+              // First
+              matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
+              found_backward_match = true; // Change flag for succesfull forward implant decay match
+              beta_type = MATCH; // Overwrite beta_type
+              break;
+            }
+            case 2: {
+              // Second Match 
+              beta_type = SECOND_MATCH; // Overwrite beta_type
+              break;
+            } 
+            case 3: {
+              // Third Match 
+              beta_type = THIRD_MATCH; // Overwrite beta_type
+              break;
+            } 
+            case 10: {
+              // Tenth Match 
+              beta_type = TENTH_MATCH; // Overwrite beta_type
+              break;
+            } 
+            default:
+              // No longer tracking any matches
+              break;
+            }
+
+            // Make new struct to contain match info and add parameters
+            BetaCandidateInfo matchedBetaInfo;
+            matchedBetaInfo.setBetaParameters(correlation_type, beta_type, time_diff, decay_evt->first, gatedimplant_pos_x, gatedimplant_pos_y, e, decay_x, decay_y, decay_e, decay_spill);
+            // Add beta data to the vector
+            beta_candidate_data_vector.emplace_back( matchedBetaInfo );
+
+          }
+
+        }
+
+      } // End of decay event loop
+
+      // Make implant-decay infor struct and fill it
+      ImplantDecayInfo allImplantDecayInfo;
+      allImplantDecayInfo.implantDecayMatchMultiplicities = std::make_pair(forwards_implantbeta_candidate_counter, backwards_implantbeta_candidate_counter);
+      allImplantDecayInfo.betaCandidateInfoVector = beta_candidate_data_vector;
+      // Fill matched candidate map
+      all_matched_decays_map.emplace(last_gatedimplant_time, allImplantDecayInfo);
+
+
+    } // End of gated implant event loop
+
+    std::cout << "Finalised All Implant-Decay matching routine!" << std::endl << std::endl;
+
+  }
 
   // *************************************************************************************
   // ************************** MATCHED IMPLANT - DECAY PLOTTING *************************
@@ -867,7 +1107,7 @@ void ionbeta(const char* input, const char* output){
   std::cout << "Started filling histograms..." << std::endl;
   
   // Loop over each gated implant match 
-  for ( auto matched_decay_evt = matched_decays_map.begin(); matched_decay_evt!=matched_decays_map.end(); matched_decay_evt++ ){
+  for ( auto matched_decay_evt = gated_matched_decays_map.begin(); matched_decay_evt!=gated_matched_decays_map.end(); matched_decay_evt++ ){
 
     // Unpack the implant time of the gated implant
     int64_t gimp_time = matched_decay_evt->first;
@@ -975,17 +1215,18 @@ void ionbeta(const char* input, const char* output){
   std::cout << "Finished filling histograms!" << std::endl << std::endl;
  
   // *************************************************************************************
-  // ************************** MATCHED DECAY - GAMMA CORRELATION ************************
+  // ************************** GATED MATCHED DECAY - GAMMA CORRELATION ******************
   // *************************************************************************************
 
-  std::cout << "Started Matched Beta - Gamma matching routine..." << std::endl;
+  std::cout << "Started Gated Matched Beta - Gamma matching routine..." << std::endl;
   
   // Loop over all matched decay events
-  for( auto matched_decay_evt = matched_decays_map.begin(); matched_decay_evt != matched_decays_map.end(); matched_decay_evt++ ){
+  for( auto matched_decay_evt = gated_matched_decays_map.begin(); matched_decay_evt != gated_matched_decays_map.end(); matched_decay_evt++ ){
     // Apply cut to number of candidates
     auto& implantDecayInfo = matched_decay_evt->second;
     auto [forwards_candidate_multiplicity, backwards_candidate_multiplicity] = implantDecayInfo.implantDecayMatchMultiplicities;
     if ( forwards_candidate_multiplicity > constants::BETA_GAMMA_CANDIDATE_CUT) continue;
+    if ( backwards_candidate_multiplicity > constants::BETA_GAMMA_CANDIDATE_CUT) continue;
 
     for ( auto& matched_beta_data : implantDecayInfo.betaCandidateInfoVector){
 
@@ -994,37 +1235,49 @@ void ionbeta(const char* input, const char* output){
       BetaType beta_type                = matched_beta_data.betaType;
       int64_t last_matched_decay_time   = matched_beta_data.decayTime;
       int decay_spill                   = matched_beta_data.decaySpill;
+      Long64_t ionbetaTimeDiff          = matched_beta_data.timeDiff;
+      double decayPosX                  = matched_beta_data.decayPosX;
+      double decayPosY                  = matched_beta_data.decayPosY;
 
       // Check if decay event is onspill and skip if defined by user 
       if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
 
       // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
-      auto germanium_start = (correlation_type == FORWARDS) ? germanium_map.lower_bound(matched_decay_evt->first - 50e3) : germanium_map.lower_bound(matched_decay_evt->first - 600e6);
+      auto germanium_start = germanium_map.lower_bound(last_matched_decay_time - 50e3);
 
       // *************************************************************************************
       // **************************  LOOP OVER GERMANIUM EVENTS ******************************
       // *************************************************************************************
 
-      if ( correlation_type == FORWARDS ){
+      // Loop over all germanium events between decay event and end of prompt gamma window
+      for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
 
-        // Loop over all germanium events between decay event and end of prompt gamma window
-        for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
+        int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
 
-          int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
+        if (correlation_type==FORWARDS) h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Fill(time_diff);
+        if (correlation_type==BACKWARDS) h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Fill(time_diff);
+        
+        // Unpack germanium event items outside prompt window
+        auto [germanium_energy, germanium_spill] = germanium_evt->second; 
 
-          h1_implantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Fill(time_diff);
-          // Unpack germanium event items outside prompt window
-          auto [germanium_energy, germanium_spill] = germanium_evt->second; 
-          h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Fill(time_diff,germanium_energy);
+        if ( time_diff > 50e3 ){ break; } // At this point dt is > 50us
 
-          if ( time_diff > constants::PROMPT_GAMMA_WINDOW.second + 50e3 ){ break; }
+        h2_gatedimplantbetagamma_betagamma_dt_vs_implantbeta_dt->Fill(ionbetaTimeDiff, time_diff);
+        if (correlation_type==FORWARDS) h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Fill(time_diff,germanium_energy);
+        if (correlation_type==BACKWARDS) h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Fill(time_diff,germanium_energy);
 
-          // Check if germanium event is within prompt window
-          if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
-              
+        // Check if germanium event is within prompt window
+        if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
+
+          h2_gatedimplantbetagamma_gammaenergy_vs_implantbeta_dt->Fill(ionbetaTimeDiff, germanium_energy);
+
+          // Forward correlations
+          if (correlation_type==FORWARDS){
             // Fill gamma energy spectrum and increase counter
-            h1_implantbetagamma_spectrum_after_ionbeta_forwardmatch->Fill(germanium_energy);
-
+            h1_gatedimplantbetagamma_spectrum_after_ionbeta_forwardmatch->Fill(germanium_energy);
+            h2_gatedimplantbetagamma_energy_vs_decaystrip_forwardmatch->Fill(decayPosX, germanium_energy);
+            h2_gatedimplantbetagamma_energy_vs_decaystrip_forwardmatch->Fill(decayPosY+400, germanium_energy);
+            
             matched_implantbetagamma_counter++;
 
             // Provide gamma energy to info struct
@@ -1035,64 +1288,149 @@ void ionbeta(const char* input, const char* output){
               if ( time_diff2 > 50e3 ){ break; }
               auto [germanium_energy2, useless] = germanium_evt2->second;
               
-              if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_implantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Fill(germanium_energy,germanium_energy2); }
-              if (germanium_evt != germanium_evt2) { h2_implantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
+              if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Fill(germanium_energy,germanium_energy2); }
+              if (germanium_evt != germanium_evt2) { h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
             }
-
           }
 
-        } // End of germanium event loop
-
-
-      }
-
-      if ( correlation_type == BACKWARDS ){
-
-        // Loop over all germanium events between decay event and end of prompt gamma window
-        for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
-
-          int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
-
-          h1_implantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Fill(time_diff);
-          // Unpack germanium event items outside prompt window
-          auto [germanium_energy, germanium_spill] = germanium_evt->second; 
-          h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Fill(time_diff,germanium_energy);
-
-          if ( time_diff > -500e6 + 50e3 ){ break; }
-
-          // Check if germanium event is within prompt window
-          if ( time_diff > -600e6 && time_diff < -500e6 ){
-              
+          // Backwards correlations
+          if (correlation_type==BACKWARDS){
             // Fill gamma energy spectrum and increase counter
-            h1_implantbetagamma_spectrum_after_ionbeta_backwardmatch->Fill(germanium_energy);
-
-            matched_implantbetagamma_counter++;
-
-            // Provide gamma energy to info struct
-            matched_beta_data.setGammaParameters(germanium_energy);
-
+            h1_gatedimplantbetagamma_spectrum_after_ionbeta_backwardmatch->Fill(germanium_energy);
+            h2_gatedimplantbetagamma_energy_vs_decaystrip_backwardmatch->Fill(decayPosX, germanium_energy);
+            h2_gatedimplantbetagamma_energy_vs_decaystrip_backwardmatch->Fill(decayPosY+400, germanium_energy);
+            
             for( auto germanium_evt2 = germanium_start; germanium_evt2 != germanium_map.end(); germanium_evt2++ ){
               int64_t time_diff2 = - ( last_matched_decay_time - germanium_evt2->first ); // Reverse like in jeroens code
               if ( time_diff2 > 50e3 ){ break; }
               auto [germanium_energy2, useless] = germanium_evt2->second;
               
-              if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_implantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Fill(germanium_energy,germanium_energy2); }
-              if (germanium_evt != germanium_evt2) { h2_implantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
+              if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Fill(germanium_energy,germanium_energy2); }
+              if (germanium_evt != germanium_evt2) { h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
             }
-
           }
+            
+        }
 
-        } // End of germanium event loop
-
-
-      }
-
+      } // End of germanium event loop
 
     }
       
   } // End of matched decay event loop
 
-  std::cout << "Finished Matched Beta - Gamma matching routine!" << std::endl << std::endl;
+  std::cout << "Finished Gated Matched Beta - Gamma matching routine!" << std::endl << std::endl;
+
+
+  // *************************************************************************************
+  // ************************** ALL MATCHED DECAY - GAMMA CORRELATION ******************
+  // *************************************************************************************
+
+  if (constants::ALL_IMPLANTS_DECAY_MATCH){
+
+
+    std::cout << "Started all Beta - Gamma matching routine..." << std::endl;
+    
+    // Loop over all matched decay events
+    for( auto matched_decay_evt = all_matched_decays_map.begin(); matched_decay_evt != all_matched_decays_map.end(); matched_decay_evt++ ){
+      // Apply cut to number of candidates
+      auto& implantDecayInfo = matched_decay_evt->second;
+      auto [forwards_candidate_multiplicity, backwards_candidate_multiplicity] = implantDecayInfo.implantDecayMatchMultiplicities;
+      if ( forwards_candidate_multiplicity > constants::BETA_GAMMA_CANDIDATE_CUT) continue;
+      if ( backwards_candidate_multiplicity > constants::BETA_GAMMA_CANDIDATE_CUT) continue;
+
+      for ( auto& matched_beta_data : implantDecayInfo.betaCandidateInfoVector){
+
+        // Unpack matched decay event variables
+        CorrelationType correlation_type  = matched_beta_data.correlationType;
+        BetaType beta_type                = matched_beta_data.betaType;
+        int64_t last_matched_decay_time   = matched_beta_data.decayTime;
+        int decay_spill                   = matched_beta_data.decaySpill;
+        Long64_t ionbetaTimeDiff          = matched_beta_data.timeDiff;
+        double decayPosX                  = matched_beta_data.decayPosX;
+        double decayPosY                  = matched_beta_data.decayPosY;
+
+        // Check if decay event is onspill and skip if defined by user 
+        if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
+
+        // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
+        auto germanium_start = germanium_map.lower_bound(last_matched_decay_time - 50e3);
+
+        // *************************************************************************************
+        // **************************  LOOP OVER GERMANIUM EVENTS ******************************
+        // *************************************************************************************
+
+        // Loop over all germanium events between decay event and end of prompt gamma window
+        for( auto germanium_evt = germanium_start; germanium_evt != germanium_map.end(); germanium_evt++ ){
+
+          int64_t time_diff = - ( last_matched_decay_time - germanium_evt->first ); // Reverse like in jeroens code
+
+          if (correlation_type==FORWARDS) h1_allimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Fill(time_diff);
+          if (correlation_type==BACKWARDS) h1_allimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Fill(time_diff);
+          
+          // Unpack germanium event items outside prompt window
+          auto [germanium_energy, germanium_spill] = germanium_evt->second; 
+
+          if ( time_diff > 50e3 ){ break; } // At this point dt is > 50us
+
+          h2_allimplantbetagamma_betagamma_dt_vs_implantbeta_dt->Fill(ionbetaTimeDiff, time_diff);
+          if (correlation_type==FORWARDS) h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Fill(time_diff,germanium_energy);
+          if (correlation_type==BACKWARDS) h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Fill(time_diff,germanium_energy);
+
+          // Check if germanium event is within prompt window
+          if ( time_diff > constants::PROMPT_GAMMA_WINDOW.first && time_diff < constants::PROMPT_GAMMA_WINDOW.second ){
+
+            h2_allimplantbetagamma_gammaenergy_vs_implantbeta_dt->Fill(ionbetaTimeDiff, germanium_energy);
+
+            // Forward correlations
+            if (correlation_type==FORWARDS){
+              // Fill gamma energy spectrum and increase counter
+              h1_allimplantbetagamma_spectrum_after_ionbeta_forwardmatch->Fill(germanium_energy);
+              h2_allimplantbetagamma_energy_vs_decaystrip_forwardmatch->Fill(decayPosX, germanium_energy);
+              h2_allimplantbetagamma_energy_vs_decaystrip_forwardmatch->Fill(decayPosY+400, germanium_energy);
+              
+              matched_implantbetagamma_counter++;
+
+              // Provide gamma energy to info struct
+              matched_beta_data.setGammaParameters(germanium_energy);
+
+              for( auto germanium_evt2 = germanium_start; germanium_evt2 != germanium_map.end(); germanium_evt2++ ){
+                int64_t time_diff2 = - ( last_matched_decay_time - germanium_evt2->first ); // Reverse like in jeroens code
+                if ( time_diff2 > 50e3 ){ break; }
+                auto [germanium_energy2, useless] = germanium_evt2->second;
+                
+                if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_allimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Fill(germanium_energy,germanium_energy2); }
+                if (germanium_evt != germanium_evt2) { h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
+              }
+            }
+
+            // Backwards correlations
+            if (correlation_type==BACKWARDS){
+              // Fill gamma energy spectrum and increase counter
+              h1_allimplantbetagamma_spectrum_after_ionbeta_backwardmatch->Fill(germanium_energy);
+              h2_allimplantbetagamma_energy_vs_decaystrip_backwardmatch->Fill(decayPosX, germanium_energy);
+              h2_allimplantbetagamma_energy_vs_decaystrip_backwardmatch->Fill(decayPosY+400, germanium_energy);
+              
+              for( auto germanium_evt2 = germanium_start; germanium_evt2 != germanium_map.end(); germanium_evt2++ ){
+                int64_t time_diff2 = - ( last_matched_decay_time - germanium_evt2->first ); // Reverse like in jeroens code
+                if ( time_diff2 > 50e3 ){ break; }
+                auto [germanium_energy2, useless] = germanium_evt2->second;
+                
+                if (TMath::Abs(germanium_evt2->first - germanium_evt->first ) < 500 && germanium_evt2 != germanium_evt ) { h2_allimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Fill(germanium_energy,germanium_energy2); }
+                if (germanium_evt != germanium_evt2) { h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Fill(germanium_energy,germanium_evt2->first - germanium_evt->first); }
+              }
+            }
+              
+          }
+
+        } // End of germanium event loop
+
+      }
+        
+    } // End of matched decay event loop
+
+    std::cout << "Finished Matched Beta - Gamma matching routine!" << std::endl << std::endl;
+
+  }
 
 
   // *************************************************************************************
@@ -1108,7 +1446,7 @@ void ionbeta(const char* input, const char* output){
     auto& knownGammaSet = knownBetaDelayedGammas->second; // Get Known Gamma Set
 
     // Loop over all matched decay events
-    for( auto matched_decay_evt = matched_decays_map.begin(); matched_decay_evt != matched_decays_map.end(); matched_decay_evt++ ){
+    for( auto matched_decay_evt = gated_matched_decays_map.begin(); matched_decay_evt != gated_matched_decays_map.end(); matched_decay_evt++ ){
       // Apply cut to number of candidates
       auto& implantDecayInfo = matched_decay_evt->second;
       auto [forwards_candidate_multiplicity, backwards_candidate_multiplicity] = implantDecayInfo.implantDecayMatchMultiplicities;
@@ -1297,20 +1635,48 @@ void ionbeta(const char* input, const char* output){
 
   TDirectory* ionbetagammaForwardCoincidences = outputFile->mkdir("ionbetagamma_forward_coincidences");
   ionbetagammaForwardCoincidences->cd();
-  h1_implantbetagamma_spectrum_after_ionbeta_forwardmatch->Write();
-  h1_implantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Write();
+  h1_gatedimplantbetagamma_spectrum_after_ionbeta_forwardmatch->Write();
+  h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Write();
+  h2_gatedimplantbetagamma_energy_vs_decaystrip_forwardmatch->Write();
+  if (constants::ALL_IMPLANTS_DECAY_MATCH){
+    h1_allimplantbetagamma_spectrum_after_ionbeta_forwardmatch->Write();
+    h1_allimplantbetagamma_spectrum_after_ionbeta_dt_forwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_forwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_square_forwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_forwardmatch->Write();
+    h2_allimplantbetagamma_energy_vs_decaystrip_forwardmatch->Write();
+  }
   gFile->cd();
 
   TDirectory* ionbetagammaBackwardCoincidences = outputFile->mkdir("ionbetagamma_backward_coincidences");
   ionbetagammaBackwardCoincidences->cd();
-  h1_implantbetagamma_spectrum_after_ionbeta_backwardmatch->Write();
-  h1_implantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Write();
-  h2_implantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Write();
+  h1_gatedimplantbetagamma_spectrum_after_ionbeta_backwardmatch->Write();
+  h1_gatedimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Write();
+  h2_gatedimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Write();
+  h2_gatedimplantbetagamma_energy_vs_decaystrip_backwardmatch->Write();
+  if (constants::ALL_IMPLANTS_DECAY_MATCH){
+    h1_allimplantbetagamma_spectrum_after_ionbeta_backwardmatch->Write();
+    h1_allimplantbetagamma_spectrum_after_ionbeta_dt_backwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_dt_energy_backwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_square_backwardmatch->Write();
+    h2_allimplantbetagamma_spectrum_after_ionbeta_square_time_backwardmatch->Write();
+    h2_allimplantbetagamma_energy_vs_decaystrip_backwardmatch->Write();
+  }
+  gFile->cd();
+
+  TDirectory* ionbetagammaAllCoincidence = outputFile->mkdir("ionbetagamma_all_coincidence");
+  ionbetagammaAllCoincidence->cd();
+  h2_gatedimplantbetagamma_betagamma_dt_vs_implantbeta_dt->Write();
+  h2_gatedimplantbetagamma_gammaenergy_vs_implantbeta_dt->Write();
+  if (constants::ALL_IMPLANTS_DECAY_MATCH){
+    h2_allimplantbetagamma_betagamma_dt_vs_implantbeta_dt->Write();
+    h2_allimplantbetagamma_gammaenergy_vs_implantbeta_dt->Write();
+  }
   gFile->cd();
   
   TDirectory* betagammaCoincidences = outputFile->mkdir("betagamma_coincidences");
