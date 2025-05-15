@@ -451,7 +451,7 @@ void eventwiseHists(const char* input, const char* output) {
 
   // Loop over all entries in the old tree
   while (reader.Next()) {
-
+  
     // *************************************************************************************
     // ****************************** GET EVENT INFORMATION *********************************
     // *************************************************************************************
@@ -602,123 +602,123 @@ void eventwiseHists(const char* input, const char* output) {
     // ****************************** LOOP OVER GATED IMPLANTS  *****************************
     // *************************************************************************************
     
-    // Define a map to hold a set of  subevents which contained FRS and gated implant coincidence
-    std::map<std::string, std::set<int>> gatedimplant_filledtree_map = {};
+    // // Define a map to hold a set of  subevents which contained FRS and gated implant coincidence
+    // std::map<std::string, std::set<int>> gatedimplant_filledtree_map = {};
     
-    // Loop over all gatedimplant isotopes and define an empty set
-    for ( auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
-      // Get the fist element of the tuple containing the name
-      std::string implant_gate_name = itr.first;
+    // // Loop over all gatedimplant isotopes and define an empty set
+    // for ( auto itr : constants::IMPLANT_GATES_INFILE_MAP ){
+    //   // Get the fist element of the tuple containing the name
+    //   std::string implant_gate_name = itr.first;
 
-      // Fill map with empty set
-      gatedimplant_filledtree_map.emplace(implant_gate_name, std::set<int>());
-    }
+    //   // Fill map with empty set
+    //   gatedimplant_filledtree_map.emplace(implant_gate_name, std::set<int>());
+    // }
     
 
-    if (aidaimphits > 0 && FrsMultiItem.GetSize()>0 && FrsItem.GetSize()>0) {
-      // std::cout << "[DEBUG] PostCheck" << std::endl;
+    // if (aidaimphits > 0 && FrsMultiItem.GetSize()>0 && FrsItem.GetSize()>0) {
+    //   // std::cout << "[DEBUG] PostCheck" << std::endl;
 
-      // Apply Lookahead to check frs entrie sof other frs events
-      for (int ilook=current_entry; ilook<=current_entry+constants::LOOKAHEAD; ++ilook){
+    //   // Apply Lookahead to check frs entrie sof other frs events
+    //   for (int ilook=current_entry; ilook<=current_entry+constants::LOOKAHEAD; ++ilook){
 
-        // Defensive code for end of entry loop
-        if (ilook < 0 || ilook > totalEntries - 1) { continue; }
+    //     // Defensive code for end of entry loop
+    //     if (ilook < 0 || ilook > totalEntries - 1) { continue; }
 
-        // Jump to ilook
-        reader.SetEntry(ilook);
+    //     // Jump to ilook
+    //     reader.SetEntry(ilook);
         
-        // Loop over all FrsMHTDC dataitems
-        for (auto const& frs_multi_item : FrsMultiItem) {
+    //     // Loop over all FrsMHTDC dataitems
+    //     for (auto const& frs_multi_item : FrsMultiItem) {
 
-          for (auto const& frs_item : FrsItem){
+    //       for (auto const& frs_item : FrsItem){
 
-            std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
-            std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
-            std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
-            std::vector<float> const& SX4 = frs_multi_item.Get_ID_s4x_mhtdc();
-            Long64_t const& frs_wr = frs_item.Get_wr_t();
-            Float_t const& frs_sci42e = frs_item.Get_sci_e_42();
-            Float_t const& frs_sci41e = frs_item.Get_sci_e_41();
-            Float_t const& frs_z41 = frs_item.Get_ID_z41();
+    //         std::vector<float> const& AoQ = frs_multi_item.Get_ID_AoQ_corr_s2s4_mhtdc();
+    //         std::vector<float> const& Z = frs_multi_item.Get_ID_z41_mhtdc();
+    //         std::vector<float> const& Z2 = frs_multi_item.Get_ID_z42_mhtdc();
+    //         std::vector<float> const& SX4 = frs_multi_item.Get_ID_s4x_mhtdc();
+    //         Long64_t const& frs_wr = frs_item.Get_wr_t();
+    //         Float_t const& frs_sci42e = frs_item.Get_sci_e_42();
+    //         Float_t const& frs_sci41e = frs_item.Get_sci_e_41();
+    //         Float_t const& frs_z41 = frs_item.Get_ID_z41();
             
-            //  Skip frs subevents where implant index wouldbe out of bounds
-            for(int i =0; i<AoQ.size(); i++){
-              if ( i >= Z.size() || i >= Z2.size() || i >= SX4.size() ) { continue; }
+    //         //  Skip frs subevents where implant index wouldbe out of bounds
+    //         for(int i =0; i<AoQ.size(); i++){
+    //           if ( i >= Z.size() || i >= Z2.size() || i >= SX4.size() ) { continue; }
 
-              // Get FRS variables
-              float aoq = AoQ[i];
-              float z = Z[i];
-              float z2 = Z2[i];
-              float s4x = SX4[i];
+    //           // Get FRS variables
+    //           float aoq = AoQ[i];
+    //           float z = Z[i];
+    //           float z2 = Z2[i];
+    //           float s4x = SX4[i];
 
-              // Get aida entries of current entry
-              reader.SetEntry(current_entry);
+    //           // Get aida entries of current entry
+    //           reader.SetEntry(current_entry);
 
-              // Loop over all gatedimplant isotopes
-              for (auto gimp_itr : gatedimplant_cuts_map){
+    //           // Loop over all gatedimplant isotopes
+    //           for (auto gimp_itr : gatedimplant_cuts_map){
                 
-                // Unpack entries inside map 
-                std::string gimp_key = gimp_itr.first;
-                auto [x4aoq_cut, zz2_cut] = gimp_itr.second;
+    //             // Unpack entries inside map 
+    //             std::string gimp_key = gimp_itr.first;
+    //             auto [x4aoq_cut, zz2_cut] = gimp_itr.second;
                 
-                if(x4aoq_cut->IsInside(aoq, s4x) && zz2_cut->IsInside(z, z2) ){
+    //             if(x4aoq_cut->IsInside(aoq, s4x) && zz2_cut->IsInside(z, z2) ){
 
-                  for (int j = 0; j < aidaimphits; j++){
+    //               for (int j = 0; j < aidaimphits; j++){
 
-                    // Define time diff of coincidence
-                    Long64_t time_diff = frs_wr - implant_time[j];
+    //                 // Define time diff of coincidence
+    //                 Long64_t time_diff = frs_wr - implant_time[j];
                     
-                    //Time gate on the frs event and not relying on the timestitching. Idea: require only one implant for the frs event?
-                    if (time_diff < constants::FRS_TIMEWINDOW.first) { continue; }
-                    if (time_diff > constants::FRS_TIMEWINDOW.second) { break; }
+    //                 //Time gate on the frs event and not relying on the timestitching. Idea: require only one implant for the frs event?
+    //                 if (time_diff < constants::FRS_TIMEWINDOW.first) { continue; }
+    //                 if (time_diff > constants::FRS_TIMEWINDOW.second) { break; }
 
-                    // Check if correct DSSD and if same subevent hasnt been filled
-                    if( implant_dssd[j] == constants::DSSD && gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
+    //                 // Check if correct DSSD and if same subevent hasnt been filled
+    //                 if( implant_dssd[j] == constants::DSSD && gatedimplant_filledtree_map[gimp_key].count(j) == 0 ){
                        
-                      // Fill bplast channel multiplicity for each gatedimplant isotope     
-                      h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_upstream_channel_multiplicity); // Upstream
-                      h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_downstream_channel_multiplicity + 70); // Downstream
+    //                   // Fill bplast channel multiplicity for each gatedimplant isotope     
+    //                   h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_upstream_channel_multiplicity); // Upstream
+    //                   h1_aida_gatedimplant_bplast_multiplicity_map[gimp_key]->Fill(bplast_downstream_channel_multiplicity + 70); // Downstream
 
-                      // Fill bplast channel multiplicity vs implant energy
-                      h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_upstream_channel_multiplicity); // Upstream
-                      h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_downstream_channel_multiplicity + 70); // Downstream
+    //                   // Fill bplast channel multiplicity vs implant energy
+    //                   h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_upstream_channel_multiplicity); // Upstream
+    //                   h2_aida_gatedimplant_energy_bplast_multiplicity_map[gimp_key]->Fill(implant_energy[j], bplast_downstream_channel_multiplicity + 70); // Downstream
 
-                      // Fill s4 position vs aida posiiton
-                      h2_aida_gatedimplant_s4x_vs_aidax_map[gimp_key]->Fill(s4x, implant_x[j]);
+    //                   // Fill s4 position vs aida posiiton
+    //                   h2_aida_gatedimplant_s4x_vs_aidax_map[gimp_key]->Fill(s4x, implant_x[j]);
 
-                      // Fill sci42e vs sci41e
-                      h2_aida_gatedimplant_sci41e_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_sci41e);
+    //                   // Fill sci42e vs sci41e
+    //                   h2_aida_gatedimplant_sci41e_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_sci41e);
                       
-                      // Fill sci42e vs Z41 
-                      h2_aida_gatedimplant_z41_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_z41);
+    //                   // Fill sci42e vs Z41 
+    //                   h2_aida_gatedimplant_z41_vs_sci42e_map[gimp_key]->Fill(frs_sci42e, frs_z41);
 
-                      gatedimplant_counter_map[gimp_key]++; // Increase counter
+    //                   gatedimplant_counter_map[gimp_key]++; // Increase counter
 
-                    }
+    //                 }
 
-                    gatedimplant_filledtree_map[gimp_key].insert(j);
+    //                 gatedimplant_filledtree_map[gimp_key].insert(j);
 
-                  } // End of aida implant loop
+    //               } // End of aida implant loop
 
-                }
+    //             }
 
-              } // End of gated implant map loop
+    //           } // End of gated implant map loop
 
-            } // End of frs subevent loop
+    //         } // End of frs subevent loop
 
-          } // End of FRS data item loop
+    //       } // End of FRS data item loop
 
-        } // End of FRS MHTDC data item loop
+    //     } // End of FRS MHTDC data item loop
         
-        // Change back to ilook for next loop
-        reader.SetEntry(ilook);
+    //     // Change back to ilook for next loop
+    //     reader.SetEntry(ilook);
 
-      } // End of lookahead loop
+    //   } // End of lookahead loop
 
-    }
+    // }
 
-    // Set entry to current for rest of loop
-    reader.SetEntry(current_entry);
+    // // Set entry to current for rest of loop
+    // reader.SetEntry(current_entry);
     
 
     // *************************************************************************************
@@ -866,13 +866,16 @@ void eventwiseHists(const char* input, const char* output) {
       }
     }
 
-    if (aidadecayhits>0 && germaniumhits>0){
+    if (germaniumhits>0){
       for (int ilook=current_entry-10; ilook<current_entry+10; ++ilook){
         if (ilook<0 || ilook>totalEntries-1) continue;
         reader.SetEntry(ilook);
+        if (decay_time.GetSize() <= 0 ) continue;
+        int ilook_aidadecayhits = decay_time.GetSize();
         for (int idxDecay=0; idxDecay<aidadecayhits; ++idxDecay){
-          if ( decay_dssd[idxDecay]==1 && TMath::Abs(decay_time[aidadecayhits-1] - decay_time[0]) < 7000 && TMath::Abs(decay_time_y[idxDecay]-decay_time_x[idxDecay])<1e3 && TMath::Abs(decay_energy_x[idxDecay]-decay_energy_x[idxDecay])<168 && decay_energy[idxDecay]>150 & decay_energy[idxDecay]<1000 ){
-            int64_t ilook_decay_time = decay_time[idxDecay];
+          int ilook_aidadecayhits = decay_time.GetSize();
+          int64_t ilook_decay_time = decay_time[idxDecay];
+          // if ( decay_dssd[idxDecay]==1 && TMath::Abs(decay_time[ilook_aidadecayhits-1] - decay_time[0]) < 7000 && TMath::Abs(decay_time_y[idxDecay]-decay_time_x[idxDecay])<1e3 && TMath::Abs(decay_energy_x[idxDecay]-decay_energy_x[idxDecay])<168 && decay_energy[idxDecay]>150 & decay_energy[idxDecay]<1000 ){
             reader.SetEntry(current_entry);
             for (int idxGamma=0; idxGamma<germaniumhits; ++idxGamma){
               if (germanium_det[idxGamma] <= 15 && germanium_cry[idxGamma] <= 2 && germanium_energy[idxGamma] > 20. ){
@@ -880,7 +883,7 @@ void eventwiseHists(const char* input, const char* output) {
                 if (TMath::Abs(ilook) < 20) h1_decay_germanium_dt_timestiched_ilook20->Fill(ilook_decay_time-germanium_time[idxGamma]);
               }
             }
-          }
+          // }
         }
         reader.SetEntry(ilook);
       }
@@ -889,9 +892,9 @@ void eventwiseHists(const char* input, const char* output) {
     reader.SetEntry(current_entry);
 
 
-    // *************************************************************************************
-    // ****************************** PRINT OUT LOOP PROGRESS ******************************
-    // *************************************************************************************
+  //   // *************************************************************************************
+  //   // ****************************** PRINT OUT LOOP PROGRESS ******************************
+  //   // *************************************************************************************
     
 
     // Show the progress of the loop

@@ -27,7 +27,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "70br"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "81zr"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -42,6 +42,7 @@ namespace constants{
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const uint64_t IMPLANT_DEAD_TIME = 350e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
+  const double IMPLANT_DEADTIME_LOCAL_RANGE = 5; // How far from the implant is the deadtime applied in x and y
   const int BETA_CANDIDATE_CUT = 5; // Define number of candidate betas a implant must have before plotting
   const int BETA_GAMMA_CANDIDATE_CUT = 5;
 
@@ -126,7 +127,7 @@ bool isNoisyStrip(std::vector<double> noisy_strip_vector, double event_strip){
 // *************************************************************************************
 
 
-class TimeRangeManager {
+class TimeRangeManagerGlobal {
   public:
     struct TimeRange {
       uint64_t start;
@@ -193,6 +194,54 @@ class TimeRangeManager {
 
       isMerged = true;
     } 
+};
+
+class TimeRangeManagerLocal {
+  public:
+
+    struct TimeRange {
+      uint64_t  start;
+      uint64_t  end;
+      double    posX;
+      double    posY;
+
+      bool contains(uint64_t time, double x, double y, double posRange) const {
+        return time >= start && time <= end && TMath::Abs(x-posX) <= posRange && TMath::Abs(y-posY) <= posRange;
+      }
+
+      bool operator<(const TimeRange& other) const {
+        return start < other.start;
+      }
+    };
+
+    // Constructor
+    TimeRangeManagerLocal(double positionThreshold=5){
+      posRange = positionThreshold;
+    }
+
+    // Add a new time range
+    void addRange(uint64_t start, uint64_t end, double posX, double posY) {
+      if (start > end) std::swap(start, end);  // ensure proper order
+      ranges.push_back({start, end, posX, posY});
+    }
+
+    // Check if a time is within any merged range
+    bool contains(uint64_t time, double x, double y) {
+      for (const auto& range : ranges) {
+        if (range.contains(time, x, y, posRange)) return true;
+      }
+      return false;
+    }
+
+    // Access the ranges
+    const std::vector<TimeRange>& getRanges() {
+      return ranges;
+    }
+
+  private:
+    double                  posRange;
+    std::vector<TimeRange>  ranges;
+
 };
 
 struct BetaCandidateInfo{
@@ -283,7 +332,7 @@ std::multimap<int64_t, std::tuple<double, int>> germanium_map;
 
 // Define a TimeRangeManager object to manage the deadtime windows for all implants in DSSD
 
-TimeRangeManager deadtimeWindowManager;
+TimeRangeManagerLocal deadtimeWindowManager(constants::IMPLANT_DEADTIME_LOCAL_RANGE);
 
 // *************************************************************************************
 // ****************************** START MACRO ******************************************
@@ -507,7 +556,7 @@ void ionbeta(const char* input, const char* output){
       );
 
       // Define deadtime range in manager
-      deadtimeWindowManager.addRange((uint64_t)*implant_time, (uint64_t)*implant_time+constants::IMPLANT_DEAD_TIME);
+      deadtimeWindowManager.addRange((uint64_t)*implant_time, (uint64_t)*implant_time+constants::IMPLANT_DEAD_TIME, *implant_x, *implant_y);
 
     }
   }
@@ -728,13 +777,13 @@ void ionbeta(const char* input, const char* output){
 
     // Find the decay event corresponding to the start of our decay loop using our time window
     // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
-    auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - constants::TIME_THRESHOLD);
+    auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 2*constants::TIME_THRESHOLD);
 
     // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
     for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
 
       // Break out of loop if decay events are now outside of time window
-      if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
+      if ( decay_evt->first > last_gatedimplant_time + 2*constants::TIME_THRESHOLD ){ break; }
 
       // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
       if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
@@ -766,7 +815,7 @@ void ionbeta(const char* input, const char* output){
           // if ( time_diff < 60e3 ){ continue; }
 
           // Check if decay occures within a deadtime induced my implant in AIDA
-          if ( deadtimeWindowManager.contains(decay_evt->first) ){
+          if ( deadtimeWindowManager.contains(decay_evt->first, decay_x, decay_y) ){
             h1_deadtime_implant_vetoed_decay_candidates_time->Fill(decay_evt->first);
             std::cout << "Rejected a forwards ion-beta candidate due to implant deadtime." << std::endl;
             continue; 
@@ -821,7 +870,7 @@ void ionbeta(const char* input, const char* output){
         if (time_diff < 0 && -time_diff < constants::TIME_THRESHOLD) {
 
           // Check if decay occures within a deadtime induced my implant in AIDA
-          if ( deadtimeWindowManager.contains(decay_evt->first) ){
+          if ( deadtimeWindowManager.contains(decay_evt->first, decay_x, decay_y) ){
             std::cout << "Rejected backwards ion-beta candidate due to implant deadtime." << std::endl;
             continue; 
           }
@@ -942,13 +991,13 @@ void ionbeta(const char* input, const char* output){
 
       // Find the decay event corresponding to the start of our decay loop using our time window
       // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
-      auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - constants::TIME_THRESHOLD);
+      auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 2*constants::TIME_THRESHOLD);
 
       // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
       for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
 
         // Break out of loop if decay events are now outside of time window
-        if ( decay_evt->first > last_gatedimplant_time + constants::TIME_THRESHOLD ){ break; }
+        if ( decay_evt->first > last_gatedimplant_time + 2*constants::TIME_THRESHOLD ){ break; }
 
         // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
         if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
@@ -980,7 +1029,7 @@ void ionbeta(const char* input, const char* output){
             // if ( time_diff < 60e3 ){ continue; }
 
             // Check if decay occures within a deadtime induced my implant in AIDA
-            if ( deadtimeWindowManager.contains(decay_evt->first) ){
+            if ( deadtimeWindowManager.contains(decay_evt->first, decay_x, decay_y) ){
               h1_deadtime_implant_vetoed_decay_candidates_time->Fill(decay_evt->first);
               std::cout << "Rejected a forwards ion-beta candidate due to implant deadtime." << std::endl;
               continue; 
@@ -1035,7 +1084,7 @@ void ionbeta(const char* input, const char* output){
           if (time_diff < 0 && -time_diff < constants::TIME_THRESHOLD) {
 
             // Check if decay occures within a deadtime induced my implant in AIDA
-            if ( deadtimeWindowManager.contains(decay_evt->first) ){
+            if ( deadtimeWindowManager.contains(decay_evt->first, decay_x, decay_y) ){
               std::cout << "Rejected backwards ion-beta candidate due to implant deadtime." << std::endl;
               continue; 
             }
@@ -1505,13 +1554,13 @@ void ionbeta(const char* input, const char* output){
 
     // Unpack decay data 
     int64_t decay_time = good_decay_evt->first;
-    auto [useless_1, useless_2, useless_3, useless_4, useless_5, decay_spill, useless_6, useless_7] = good_decay_evt->second;
+    auto [decay_x, decay_y, useless_3, useless_4, useless_5, decay_spill, useless_6, useless_7] = good_decay_evt->second;
 
     // Skip if decay is onspill and have not been selected
     if( constants::ONLY_OFFSPILL_DECAY && decay_spill == 1){ continue; }
 
     // Skip if decay occures in the deadtime induced by an implant
-    if ( deadtimeWindowManager.contains(decay_time) ){ continue; }
+    if ( deadtimeWindowManager.contains(decay_time, decay_x, decay_y) ){ continue; }
 
     // Find the germanium event starting at the same time as the decay event (50 microsecond grace period)
     auto germanium_start = germanium_map.lower_bound(decay_time - 50e3);

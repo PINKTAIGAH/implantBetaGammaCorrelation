@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>  // for uint64_t
+#include <TMath.h>
 
 class TimeRangeManager {
   public:
@@ -78,23 +79,73 @@ class TimeRangeManager {
 };
 
 
-int deadtimeClassTest(const int64_t timeToCheck) {
-  TimeRangeManager manager;
 
-  manager.addRange(1740183203410465830, 1740183203410465830+50e3);
-  manager.addRange(1740183203516077830, 1740183203516077830+50e3);
-  manager.addRange(1740183203610865830, 1740183203610865830+50e3);
+class TimeRangeManagerLocal {
+  public:
 
-  if (manager.contains(timeToCheck)) {
-    std::cout << "Time " << timeToCheck << " is within a range.\n";
+    struct TimeRange {
+      uint64_t  start;
+      uint64_t  end;
+      double    posX;
+      double    posY;
+
+      bool contains(uint64_t time, double x, double y, double posRange) const {
+        return time >= start && time <= end && TMath::Abs(x-posX) <= posRange && TMath::Abs(y-posY) <= posRange;
+      }
+
+      bool operator<(const TimeRange& other) const {
+        return start < other.start;
+      }
+    };
+
+    // Constructor
+    TimeRangeManagerLocal(double positionThreshold=5){
+      posRange = positionThreshold;
+    }
+
+    // Add a new time range
+    void addRange(uint64_t start, uint64_t end, double posX, double posY) {
+      if (start > end) std::swap(start, end);  // ensure proper order
+      ranges.push_back({start, end, posX, posY});
+    }
+
+    // Check if a time is within any merged range
+    bool contains(uint64_t time, double x, double y) {
+      for (const auto& range : ranges) {
+        if (range.contains(time, x, y, posRange)) return true;
+      }
+      return false;
+    }
+
+    // Access the ranges
+    const std::vector<TimeRange>& getRanges() {
+      return ranges;
+    }
+
+  private:
+    double                  posRange;
+    std::vector<TimeRange>  ranges;
+
+};
+
+
+void deadtimeClassTest(const int64_t timeToCheck, const double posXToCheck, const double posYToCheck, const double posRangeToCheck) {
+  TimeRangeManagerLocal manager(posRangeToCheck);
+
+  manager.addRange(1740183203410465830, 1740183203410465830+50e3, 245, 46);
+  manager.addRange(1740183203516077830, 1740183203516077830+50e3, 123, 23);
+  manager.addRange(1740183203610865830, 1740183203610865830+50e3, 165, 11);
+
+  if (manager.contains(timeToCheck, posXToCheck, posYToCheck)) {
+    std::cout << "Time " << timeToCheck << " is inside manager.\n";
   } else {
-    std::cout << "Time " << timeToCheck << " is NOT within any range.\n";
+    std::cout << "Time " << timeToCheck << " is NOT inside manager.\n";
   }
 
   std::cout << "Merged Ranges:\n";
-  for (const auto& r : manager.getMergedRanges()) {
-    std::cout << "[" << r.start << ", " << r.end << "]\n";
+  for (const auto& r : manager.getRanges()) {
+    std::cout << "[" << r.start << ", " << r.end  << ", " << r.posX << ", " << r.posY << "]\n";
   }
 
-  return 0;
+  std::exit(0);
 }
