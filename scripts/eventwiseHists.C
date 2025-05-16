@@ -438,6 +438,9 @@ void eventwiseHists(const char* input, const char* output) {
   TH1F* h1_decay_germanium_dt_timestiched = new TH1F("decay_germanium_dt_timestiched", "AIDA Decay - DEGAS time difference", 2000, -60e3, 60e3);
   TH1F* h1_decay_germanium_dt_timestiched_ilook10 = new TH1F("decay_germanium_dt_timestiched_ilook10", "AIDA Decay - DEGAS time difference (Lookahead 10)", 2000, -60e3, 60e3);
   TH1F* h1_decay_germanium_dt_timestiched_ilook20 = new TH1F("decay_germanium_dt_timestiched_ilook20", "AIDA Decay - DEGAS time difference (Lookahead 20)", 2000, -60e3, 60e3);
+  TH1F* h1_decay_germanium_dt_timestiched_ilook50 = new TH1F("decay_germanium_dt_timestiched_ilook50", "AIDA Decay - DEGAS time difference (Lookahead 50)", 2000, -60e3, 60e3);
+  TH1F* h1_decay_germanium_dt_timestiched_ilook75 = new TH1F("decay_germanium_dt_timestiched_ilook75", "AIDA Decay - DEGAS time difference (Lookahead 75)", 2000, -60e3, 60e3);
+  TH1F* h1_decay_germanium_dt_timestiched_ilook100 = new TH1F("decay_germanium_dt_timestiched_ilook100", "AIDA Decay - DEGAS time difference (Lookahead 100)", 2000, -60e3, 60e3);
 
   // Plot Decay event size
   TH1F* h1_decay_event_size = new TH1F("decay_event_size", "AIDA Decay Event Size", 10000, -40e3, 40e3);
@@ -867,7 +870,7 @@ void eventwiseHists(const char* input, const char* output) {
     }
 
     if (germaniumhits>0){
-      for (int ilook=current_entry-10; ilook<current_entry+10; ++ilook){
+      for (int ilook=current_entry-100; ilook<current_entry+100; ++ilook){
         if (ilook<0 || ilook>totalEntries-1) continue;
         reader.SetEntry(ilook);
         if (decay_time.GetSize() <= 0 ) continue;
@@ -879,8 +882,11 @@ void eventwiseHists(const char* input, const char* output) {
             reader.SetEntry(current_entry);
             for (int idxGamma=0; idxGamma<germaniumhits; ++idxGamma){
               if (germanium_det[idxGamma] <= 15 && germanium_cry[idxGamma] <= 2 && germanium_energy[idxGamma] > 20. ){
-                if (TMath::Abs(ilook) < 10) h1_decay_germanium_dt_timestiched_ilook10->Fill(ilook_decay_time-germanium_time[idxGamma]);
-                if (TMath::Abs(ilook) < 20) h1_decay_germanium_dt_timestiched_ilook20->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook-current_entry) < 10) h1_decay_germanium_dt_timestiched_ilook10->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook-current_entry) < 20) h1_decay_germanium_dt_timestiched_ilook20->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook-current_entry) < 50) h1_decay_germanium_dt_timestiched_ilook50->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook-current_entry) < 75) h1_decay_germanium_dt_timestiched_ilook75->Fill(ilook_decay_time-germanium_time[idxGamma]);
+                if (TMath::Abs(ilook-current_entry) < 100) h1_decay_germanium_dt_timestiched_ilook100->Fill(ilook_decay_time-germanium_time[idxGamma]);
               }
             }
           // }
@@ -1036,6 +1042,9 @@ void eventwiseHists(const char* input, const char* output) {
   h1_decay_germanium_dt_timestiched->Write();
   h1_decay_germanium_dt_timestiched_ilook10->Write();
   h1_decay_germanium_dt_timestiched_ilook20->Write();
+  h1_decay_germanium_dt_timestiched_ilook50->Write();
+  h1_decay_germanium_dt_timestiched_ilook75->Write();
+  h1_decay_germanium_dt_timestiched_ilook100->Write();
 
 
   // *************************************************************************************

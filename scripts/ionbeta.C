@@ -27,7 +27,7 @@
 
 
 namespace constants{
-  const std::string ISOTOPE_TREE = "81zr"; // Name suffix for gatedimplant tree & branch in anatree
+  const std::string ISOTOPE_TREE = "84nb"; // Name suffix for gatedimplant tree & branch in anatree
   const int DSSD = 1; // Which DSSD will the analysis be run on
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
@@ -777,16 +777,16 @@ void ionbeta(const char* input, const char* output){
 
     // Find the decay event corresponding to the start of our decay loop using our time window
     // The inital decay event will be the one whose time corresponds to our time threshould before the implant occured
-    auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 2*constants::TIME_THRESHOLD);
+    auto decay_start = good_decays_map.lower_bound(last_gatedimplant_time - 5*constants::TIME_THRESHOLD);
 
     // Now loop over decay events starting from our decay start defined above untoll we pass our time threshold
     for(auto decay_evt = decay_start; decay_evt != good_decays_map.end(); decay_evt++){
 
       // Break out of loop if decay events are now outside of time window
-      if ( decay_evt->first > last_gatedimplant_time + 2*constants::TIME_THRESHOLD ){ break; }
+      // if ( decay_evt->first > last_gatedimplant_time + 5*constants::TIME_THRESHOLD ){ break; }
 
       // Break out of loop if we have found a forward  & backward match and we are not checking all candidates 
-      if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
+      // if ( !constants::CHECK_BETA_CANDITATES && found_forward_match && found_backward_match ){ break; }
 
       // Unpack event variables for current decay event
       auto [decay_x, decay_y, decay_e, decay_ex, decay_ey, decay_spill, decay_bplast, decay_dssd] = decay_evt->second;
