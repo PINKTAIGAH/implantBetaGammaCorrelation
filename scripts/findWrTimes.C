@@ -15,7 +15,7 @@ void findWrTimes(const char* input){
   TTreeReader reader(tree);
 
   // Create tree reader values for the branches you want to read
-  TTreeReaderArray<long long> time(reader, "bPlastTwinpeaksCalData.fwr_t");
+  TTreeReaderArray<Long64_t> time(reader, "AidaDecayHits.Time");
 
   // Define the counter
   int counter = 0;
@@ -36,15 +36,8 @@ void findWrTimes(const char* input){
 
     // Change entry to last 1000 entries if start time is assigned and we havent aready jumped
     if ( !jumpedToEnd && wr_start!=0 ){
-      reader.SetEntry(totalEntries-1000);
+      reader.SetEntry(totalEntries-5000);
       jumpedToEnd = true;
-    }
-
-    // Show the progress of the loop
-    if (reader.GetCurrentEntry() % 100000 == 0) {
-        int progress = (reader.GetCurrentEntry() * 100) / totalEntries;
-        char spin = spinner[reader.GetCurrentEntry() / 1000 % 4];
-        std::cout << "\rProcessing the tree " << reader.GetCurrentEntry() << " (" << progress << "%) " << spin << std::flush;
     }
   }
 

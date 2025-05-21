@@ -33,13 +33,14 @@ namespace constants{
     // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb_bb7.root"},
     // {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr_bb7.root"}
 
-    // {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
-    // {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
-    // {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
-    // {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
-    // {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"}
+    {"82nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/82nb.root"},
+    {"84nb", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84nb.root"},
+    {"84mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/84mo.root"},
+    {"85mo", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/85mo.root"},
+    {"81zr", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/81zr.root"},
+    {"86tc", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/86tc.root"}
 
-    {"70br", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/70br.root"}
+    // {"70br", "/lustre/gamma/gbrunic/G302/analysis/implantBetaGammaCorrelation/gates/70br.root"}
   };
 
 }
@@ -58,6 +59,8 @@ struct implant_data{
   double energy;
   double energy_x;
   double energy_y;
+  int cluster_size_x;
+  int cluster_size_y;
   int sp;
   int bp;
 }aida_implant_data;
@@ -71,6 +74,8 @@ struct decay_data{
   double energy;
   double energy_x;
   double energy_y;
+  int cluster_size_x;
+  int cluster_size_y;
   int dssd;
   int sp;
   int bp;
@@ -250,6 +255,8 @@ void makeAnatrees(const char* input, const char* output) {
   TTreeReaderArray<double> implant_energy_y(reader, "AidaImplantHits.EnergyY");
   TTreeReaderArray<Double_t> implant_x(reader, "AidaImplantHits.StripX");
   TTreeReaderArray<Double_t> implant_y(reader, "AidaImplantHits.StripY");
+  TTreeReaderArray<Int_t> implant_cluster_size_x(reader, "AidaImplantHits.ClusterSizeX");
+  TTreeReaderArray<Int_t> implant_cluster_size_y(reader, "AidaImplantHits.ClusterSizeY");
 
   TTreeReaderArray<Int_t> implant_adc_dssd(reader, "AidaImplantCalAdcData.dssd");
   TTreeReaderArray<Int_t> implant_adc_side(reader, "AidaImplantCalAdcData.side");
@@ -305,12 +312,12 @@ void makeAnatrees(const char* input, const char* output) {
   // Create implant tree and branches for anatree
   TTree* implant_tree = new TTree("aida_implant_tree", "New AIDA Analysis Tree");
   implant_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
-  implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
+  implant_tree->Branch("implant", &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:csx/I:csy/I:sp/I:bp/I");
 
   // Create decay tree and branches for anatree
   TTree* decay_tree = new TTree("aida_decay_tree", "New AIDA Analysis Tree");
   decay_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
-  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/D:dssd/I:sp/I:bp/I");
+  decay_tree->Branch("decay", &aida_decay_data, "time/l:time_x/l:time_y/l:x/D:y/D:e/D:ex/D:ey/D:csx/I:csy/I:dssd/I:sp/I:bp/I");
 
   // Create germanium tree and branches for anatree
   TTree* germanium_tree = new TTree("germanium_tree", "New AIDA Analysis Tree");
@@ -337,7 +344,7 @@ void makeAnatrees(const char* input, const char* output) {
     // Create tree and define branch structure
     TTree* gatedimplant_tree = new TTree(tree_name.c_str(), "New AIDA Analysis Tree");
     gatedimplant_tree->SetDirectory(0); // Save tree object im memory untill explicitly written to file
-    gatedimplant_tree->Branch(branch_name.c_str(), &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:sp/I:bp/I");
+    gatedimplant_tree->Branch(branch_name.c_str(), &aida_implant_data, "time/l:stopped/I:dssd/I:x/D:y/D:e/D:ex/D:ey/D:csx/I:csy/I:sp/I:bp/I");
 
     // Add tree to set
     gatedimplant_trees_map.emplace(implant_gate_name, gatedimplant_tree);
@@ -439,6 +446,8 @@ void makeAnatrees(const char* input, const char* output) {
         aida_implant_data.energy = implant_energy[j];
         aida_implant_data.energy_x = implant_energy_x[j];
         aida_implant_data.energy_y = implant_energy_y[j];
+        aida_implant_data.cluster_size_x = implant_cluster_size_x[j];
+        aida_implant_data.cluster_size_y = implant_cluster_size_y[j];
         aida_implant_data.sp = spflag;
         aida_implant_data.bp = bpflag;
 
@@ -535,6 +544,8 @@ void makeAnatrees(const char* input, const char* output) {
                       aida_implant_data.energy = implant_energy[j];
                       aida_implant_data.energy_x = implant_energy_x[j];
                       aida_implant_data.energy_y = implant_energy_y[j];
+                      aida_implant_data.cluster_size_x = implant_cluster_size_x[j];
+                      aida_implant_data.cluster_size_y = implant_cluster_size_y[j];
                       aida_implant_data.sp = spflag;
                       aida_implant_data.bp = bpflag;
 
@@ -600,6 +611,8 @@ void makeAnatrees(const char* input, const char* output) {
             aida_decay_data.energy = decay_energy[i];
             aida_decay_data.energy_x = decay_energy_x[i];
             aida_decay_data.energy_y = decay_energy_y[i];
+            aida_decay_data.cluster_size_x = decay_cluster_size_x[i];
+            aida_decay_data.cluster_size_y = decay_cluster_size_y[i];
             aida_decay_data.dssd = decay_dssd[i];
             aida_decay_data.sp = spflag;
             aida_decay_data.bp = bpflag;

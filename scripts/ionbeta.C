@@ -8,6 +8,7 @@
 #include<string>
 #include<vector>
 #include<algorithm>
+#include<functional>
 
 #include<TF1.h>
 #include<TH1F.h>
@@ -32,17 +33,20 @@ namespace constants{
 
   const bool ONLY_OFFSPILL_DECAY = false; // Check for onspill decay matches
   const bool CHECK_BETA_CANDITATES = true; // Check for all beta candidates of an implant
-  const bool VETO_INTERRUPTED_IMPLANTS = false; // Veto any implant which has a subsequent implant occure within time and position window
-  /*const bool INCLUDE_BACKWARDS_MATCH = true; // Look for reverse time implant beta correlations*/
+  const bool VETO_INTERRUPTED_IMPLANTS = true; // Veto any implant which has a subsequent implant occure within time and position window
   const bool ALL_IMPLANTS_DECAY_MATCH = false; // Look at impdecay matches for all implants aswell
 
   const int64_t TIME_SCALE = 1e9; // Timescale of time variables wrt ns
-  const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
+  const int64_t HALF_LIFE = 50 * TIME_SCALE ; // Half life for gated isotope
+  const int64_t HALF_LIFE_MULTIPLIER = 3; // Multiplier for numbe rof lifetimes which time threshold is extended by
+
+  const int64_t TIME_THRESHOLD = HALF_LIFE_MULTIPLIER * HALF_LIFE; // Time threshold for implant beta correlation
+  // const int64_t TIME_THRESHOLD = 50 * TIME_SCALE; // Time threshold for implant beta correlation
   const double TIME_PER_DT_BIN = 1e9; // Time per bin in Implant-beta time correlation
   const int64_t POSITION_THRESHOLD = 1; //  Position window for decay wrt implant pixel as centroid
 
   const uint64_t IMPLANT_DEAD_TIME = 350e3; // The deadtime we impose on aida LEC after an implant occures in AIDA
-  const double IMPLANT_DEADTIME_LOCAL_RANGE = 5; // How far from the implant is the deadtime applied in x and y
+  const double IMPLANT_DEADTIME_LOCAL_RANGE = 8; // How far from the implant is the deadtime applied in x and y
   const int BETA_CANDIDATE_CUT = 5; // Define number of candidate betas a implant must have before plotting
   const int BETA_GAMMA_CANDIDATE_CUT = 5;
 
@@ -70,7 +74,7 @@ namespace constants{
 namespace experimentInfo{
     const uint64_t WR_EXPERIMENT_START = 1.7401830e+18; // White rabbit start time of files 
     const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,
-    const int64_t SLICES_EVERY = 1; // Size of white rabbit histogram bins 
+    const Double_t SLICES_EVERY = 1; // Size of white rabbit histogram bins 
     const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
     const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
 }
@@ -417,7 +421,10 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_aida_implant_xy = new TH2F("aida_implant_xy", "AIDA Implant XY", 384, 0, 384, 128, 0, 128);
   TH2F* h2_aida_matched_xy = new TH2F("aida_matched_xy", "AIDA Matched XY", 384, 0, 384, 128, 0, 128);
   TH1F* h1_aida_wr_times = new TH1F("aida_wr_times", "AIDA WR Times", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
+  TH1F* h1_onspill_times = new TH1F("aida_onspill_times", "Onspill WR Times", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_aida_implant_beta_dt = new TH1F("aida_implant_beta_firstmatch_dt", "Implant-Decay #Deltat (First Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
+  TH1F* h1_aida_implant_beta_dt_forward = new TH1F("aida_implant_beta_firstmatch_dt_forward", "Implant-Decay #Deltat (First Match-Forward);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS/2, 0, constants::TIME_THRESHOLD/constants::TIME_SCALE);
+  TH1F* h1_aida_implant_beta_dt_backward = new TH1F("aida_implant_beta_firstmatch_dt_backward", "Implant-Decay #Deltat (First Match-Backward);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS/2, 0, constants::TIME_THRESHOLD/constants::TIME_SCALE);
   TH1F* h1_aida_implant_beta_secondmatch_dt = new TH1F("aida_implant_beta_secondmatch_dt", "Implant-Decay #Deltat (Second Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
   TH1F* h1_aida_implant_beta_thirdmatch_dt = new TH1F("aida_implant_beta_thirdmatch_dt", "Implant-Decay #Deltat (Third Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
   TH1F* h1_aida_implant_beta_tenthmatch_dt = new TH1F("aida_implant_beta_tenthmatch_dt", "Implant-Decay #Deltat (Tenth Match);Implant-Decay #Deltat (); Counts/", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD/constants::TIME_SCALE, constants::TIME_THRESHOLD/constants::TIME_SCALE);
@@ -501,6 +508,7 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_implant_energy_dt_low_multiplicity = new TH2F("implant_energy_dt_low_multiplicity", "Implant Energy vs Implant-Decay dt (Beta Multiplicity < 4)", 7000/20, 0, 7000, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH2F* h2_decay_energy_dt_low_multiplicity = new TH2F("decay_energy_dt_low_multiplicity", "Decay Energy vs Implant-Decay dt (Beta Multiplicity < 4)", 1500/20, 0, 1500, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH2F* h2_strip_dt_low_multiplicity = new TH2F("strip_dt_low_multiplicity", "Strip XY vs Implant-Decay dt (Beta Multiplicity < 4)", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
+  TH2F* h2_impstrip_dt_low_multiplicity = new TH2F("impstrip_dt_low_multiplicity", "HEC Strip XY vs Implant-Decay dt (Beta Multiplicity < 4)", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH1F* h1_candidate_wr_time_low_multiplicity = new TH1F("candidate_wr_time_low_multiplicity", "AIDA Candidate WR Times (Beta Multiplicity < 4)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_candidate_ionbeta_dt_low_multiplicity = new TH1F("candidate_ionbeta_dt_low_multiplicity", "Candidate Implant-Decay dt (Beta Multiplicity < 4)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
 
@@ -509,6 +517,7 @@ void ionbeta(const char* input, const char* output){
   TH2F* h2_implant_energy_dt_high_multiplicity = new TH2F("implant_energy_dt_high_multiplicity", "Implant Energy vs Implant-Decay dt (Beta Multiplicity > 20)", 7000/20, 0, 7000, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH2F* h2_decay_energy_dt_high_multiplicity = new TH2F("decay_energy_dt_high_multiplicity", "Decay Energy vs Implant-Decay dt (Beta Multiplicity > 20)", 1500/20, 0, 1500, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH2F* h2_strip_dt_high_multiplicity = new TH2F("strip_dt_high_multiplicity", "Strip XY vs Implant-Decay dt (Beta Multiplicity > 20)", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
+  TH2F* h2_impstrip_dt_high_multiplicity = new TH2F("impstrip_dt_high_multiplicity", "HEC Strip XY vs Implant-Decay dt (Beta Multiplicity > 20)", 528, 0, 528, constants::IMPDECAY_TIME_BINS, 0, constants::TIME_THRESHOLD);
   TH1F* h1_candidate_wr_time_high_multiplicity = new TH1F("candidate_wr_time_high_multiplicity", "AIDA Candidate WR Times (Beta Multiplicity > 20)", experimentInfo::NUMBER_OF_SLICES, experimentInfo::WR_EXPERIMENT_START, experimentInfo::WR_EXPERIMENT_END);
   TH1F* h1_candidate_ionbeta_dt_high_multiplicity = new TH1F("candidate_ionbeta_dt_high_multiplicity", "Candidate Implant-Decay dt (Beta Multiplicity > 20)", constants::IMPDECAY_TIME_BINS, -constants::TIME_THRESHOLD, constants::TIME_THRESHOLD);
 
@@ -578,6 +587,11 @@ void ionbeta(const char* input, const char* output){
 
   
   // Read decay events
+  Double_t slicesEvery = experimentInfo::SLICES_EVERY * 1e9;
+  int slicesEveryCounter = 0;
+  Long64_t lastDecayTime = experimentInfo::WR_EXPERIMENT_START;
+  int lastSpill = 0;
+  Long64_t decayTimeDiff;
   while (decay_reader.Next()){
     if( *decay_dssd==constants::DSSD && TMath::Abs( (int64_t)(*decay_time_x-*decay_time_y) )<5e3 && TMath::Abs(*decay_ex-*decay_ey)<168 && *decay_e>151 && *decay_e<1000 ){
       good_decays_map.emplace(
@@ -585,6 +599,19 @@ void ionbeta(const char* input, const char* output){
         std::make_tuple(*decay_x, *decay_y, *decay_e, *decay_ex, *decay_ey, *decay_spill, *decay_bplast, *decay_dssd)
       );
     }
+
+    decayTimeDiff = *decay_time - lastDecayTime;
+
+    if (*decay_spill==1 && slicesEveryCounter<15) {
+      h1_onspill_times->Fill(*decay_time);
+      ++slicesEveryCounter;
+    }
+    if (decayTimeDiff > slicesEvery) {
+      slicesEveryCounter = 0;
+      lastDecayTime = *decay_time;
+    }
+    if (lastSpill != *decay_spill) lastDecayTime = *decay_time;
+    lastSpill = *decay_spill;
   }
   std::cout << "Finished filling the decay map" << std::endl;
   std::cout << "Number of Decay events: " << good_decays_map.size() << std::endl << std::endl;
@@ -880,33 +907,33 @@ void ionbeta(const char* input, const char* output){
           BetaType beta_type = CANDIDATE; // Set tag for beta
           CorrelationType correlation_type = BACKWARDS; // Set tag for correlation type
 
-          switch (backwards_implantbeta_candidate_counter){
-          case 1: {
-            // First
-            matched_backwards_implantdecays_counter++; // Increase counter for succesfull matched implant decay
-            found_backward_match = true; // Change flag for succesfull forward implant decay match
-            beta_type = MATCH; // Overwrite beta_type
-            break;
-          }
-          case 2: {
-            // Second Match 
-            beta_type = SECOND_MATCH; // Overwrite beta_type
-            break;
-          } 
-          case 3: {
-            // Third Match 
-            beta_type = THIRD_MATCH; // Overwrite beta_type
-            break;
-          } 
-          case 10: {
-            // Tenth Match 
-            beta_type = TENTH_MATCH; // Overwrite beta_type
-            break;
-          } 
-          default:
-            // No longer tracking any matches
-            break;
-          }
+          // switch (backwards_implantbeta_candidate_counter){
+          // case 1: {
+          //   // first
+          //   matched_backwards_implantdecays_counter++; // increase counter for succesfull matched implant decay
+          //   found_backward_match = true; // change flag for succesfull forward implant decay match
+          //   beta_type = match; // overwrite beta_type
+          //   break;
+          // }
+          // case 2: {
+          //   // second match 
+          //   beta_type = second_match; // overwrite beta_type
+          //   break;
+          // } 
+          // case 3: {
+          //   // third match 
+          //   beta_type = third_match; // overwrite beta_type
+          //   break;
+          // } 
+          // case 10: {
+          //   // tenth match 
+          //   beta_type = tenth_match; // overwrite beta_type
+          //   break;
+          // } 
+          // default:
+          //   // no longer tracking any matches
+          //   break;
+          // }
 
           // Make new struct to contain match info and add parameters
           BetaCandidateInfo matchedBetaInfo;
@@ -919,6 +946,52 @@ void ionbeta(const char* input, const char* output){
       }
 
     } // End of decay event loop
+
+    //############# EXPERIMENTAL ###################
+    // Inverse keys in the map (assumung all keys are negative) now initial keys are closest backwards betas to implant
+    std::multimap<Long64_t, int, std::greater<Long64_t>> backward_candidate_times_map;
+    // Loop over and correct the matching order of backward candidates
+    for (int idx = 0; idx<beta_candidate_data_vector.size(); ++idx){
+      // Extract time of backward match 
+      if ( beta_candidate_data_vector[idx].correlationType == BACKWARDS ) backward_candidate_times_map.emplace(beta_candidate_data_vector[idx].timeDiff, idx);
+    }
+
+    int prototype_backward_candidate_counter = 0;
+    // Loop through correctly ordered events and assign matches
+    for ( const auto& backward_evt : backward_candidate_times_map ){
+      ++prototype_backward_candidate_counter;
+      int evtIdx = backward_evt.second;
+
+      // Assign matches to events
+      switch (prototype_backward_candidate_counter){
+      case 1: {
+        // first
+        matched_backwards_implantdecays_counter++; // increase counter for succesfull matched implant decay
+        beta_candidate_data_vector[evtIdx].betaType = MATCH;
+        break;
+      }
+      case 2: {
+        // second match 
+        beta_candidate_data_vector[evtIdx].betaType = SECOND_MATCH;
+        break;
+      } 
+      case 3: {
+        // third match 
+        beta_candidate_data_vector[evtIdx].betaType = THIRD_MATCH;
+        break;
+      } 
+      case 10: {
+        // tenth match 
+        beta_candidate_data_vector[evtIdx].betaType = TENTH_MATCH;
+        break;
+      } 
+      default:
+        // no longer tracking any matches
+        break;
+      }
+    }
+
+    //############# EXPERIMENTAL ###################
 
     // Make implant-decay infor struct and fill it
     ImplantDecayInfo gatedImplantDecayInfo;
@@ -1175,12 +1248,14 @@ void ionbeta(const char* input, const char* output){
 
       if ( correlation_type==FORWARDS && beta_type==MATCH ){
         h1_aida_implant_beta_dt->Fill(time_diff/constants::TIME_SCALE);
+        h1_aida_implant_beta_dt_forward->Fill(time_diff/constants::TIME_SCALE);
         nt_aida_implant_beta_dt->Fill((double)time_diff);
         h2_aida_matched_xy->Fill(decay_x, decay_y); 
         h1_aida_wr_times->Fill(decay_time);
       }
 
       if ( correlation_type==BACKWARDS && beta_type==MATCH ){
+        h1_aida_implant_beta_dt_backward->Fill(-time_diff/constants::TIME_SCALE);
         h1_aida_implant_beta_dt->Fill(time_diff/constants::TIME_SCALE);
         nt_aida_implant_beta_dt->Fill((double)time_diff);
       }
@@ -1221,7 +1296,7 @@ void ionbeta(const char* input, const char* output){
 
 
       if ( correlation_type == FORWARDS && forwards_candidate_multiplicity >= 20){
-        std::cout << "[DEBUG] Found high multiplicity forward beta candidate:  Implant WR Time: " << gimp_time << "  #####  Decay WR Time: " << decay_time << "  #####  Implant Energy: " << gimp_e << " MeV  #####  Decay Energy: " << decay_e << " keV  #####  Decay Pos (X, Y): (" << decay_x << "," << decay_y << ")" << std::endl;
+        std::cout << "[DEBUG] Found high multiplicity forward beta candidate:  Implant WR Time: " << gimp_time << "  #####  Decay WR Time: " << decay_time << "  #####  Implant Energy: " << gimp_e << " MeV  #####  Decay Energy: " << decay_e << " keV  #####  Decay Pos (X, Y): (" << decay_x << "," << decay_y << "   #####   Decay Spill: " << decay_spill <<  ")" << std::endl;
         h1_candidate_wr_time_high_multiplicity->Fill(decay_time);
         h1_candidate_ionbeta_dt_high_multiplicity->Fill(time_diff);
         h2_hitpattern_high_multiplicity->Fill(decay_x, decay_y);
@@ -1229,6 +1304,8 @@ void ionbeta(const char* input, const char* output){
         h2_decay_energy_dt_high_multiplicity->Fill(decay_e, time_diff);
         h2_strip_dt_high_multiplicity->Fill(decay_x, time_diff);
         h2_strip_dt_high_multiplicity->Fill(decay_y+400, time_diff);
+        h2_impstrip_dt_high_multiplicity->Fill(gimp_x, time_diff);
+        h2_impstrip_dt_high_multiplicity->Fill(gimp_y+400, time_diff);
       }
 
       if ( beta_type == SECOND_MATCH ){
@@ -1255,6 +1332,8 @@ void ionbeta(const char* input, const char* output){
         h2_decay_energy_dt_low_multiplicity->Fill(decay_e, time_diff);
         h2_strip_dt_low_multiplicity->Fill(decay_x, time_diff);
         h2_strip_dt_low_multiplicity->Fill(decay_y+400, time_diff);
+        h2_impstrip_dt_low_multiplicity->Fill(gimp_x, time_diff);
+        h2_impstrip_dt_low_multiplicity->Fill(gimp_y+400, time_diff);
       }
 
     }
@@ -1653,6 +1732,7 @@ void ionbeta(const char* input, const char* output){
   h2_implant_energy_dt_low_multiplicity->Write();
   h2_decay_energy_dt_low_multiplicity->Write();
   h2_strip_dt_low_multiplicity->Write();
+  h2_impstrip_dt_low_multiplicity->Write();
   gFile->cd();
 
   TDirectory* highCandidateMultiplicity = outputFile->mkdir("high_candidate_multiplicity");
@@ -1663,6 +1743,7 @@ void ionbeta(const char* input, const char* output){
   h2_implant_energy_dt_high_multiplicity->Write();
   h2_decay_energy_dt_high_multiplicity->Write();
   h2_strip_dt_high_multiplicity->Write();
+  h2_impstrip_dt_high_multiplicity->Write();
   gFile->cd();
 
   TDirectory* vetoedDecays = outputFile->mkdir("vetoed_decays");
@@ -1675,8 +1756,11 @@ void ionbeta(const char* input, const char* output){
   ionbetaMatch->cd();
   h2_aida_implant_xy->Write();
   h1_aida_wr_times->Write();
+  h1_onspill_times->Write();
   h2_aida_matched_xy->Write();
   h1_aida_implant_beta_dt->Write();
+  h1_aida_implant_beta_dt_forward->Write();
+  h1_aida_implant_beta_dt_backward->Write();
   h1_aida_implant_beta_secondmatch_dt->Write();
   h1_aida_implant_beta_thirdmatch_dt->Write();
   h1_aida_implant_beta_tenthmatch_dt->Write();

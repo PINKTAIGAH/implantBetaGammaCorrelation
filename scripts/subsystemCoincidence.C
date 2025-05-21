@@ -46,8 +46,8 @@ namespace constants{
 
 namespace experimentInfo{
 
-  const uint64_t WR_EXPERIMENT_START = 1.7401830e+18; // White rabbit start time of files 
-  const uint64_t WR_EXPERIMENT_END = 1.74022529e+18; // White rabbit end time of files,
+  const uint64_t WR_EXPERIMENT_START = 1740183013717197830; // White rabbit start time of files 
+  const uint64_t WR_EXPERIMENT_END = 1740225294308847830; // White rabbit end time of files,
   const int64_t SLICES_EVERY = 1; // Size of white rabbit histogram bins 
   const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
   const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
@@ -99,7 +99,7 @@ void processImplantRange(
     WrSubsystemTime wrLowerBoundKey{implantTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
     WrSubsystemTime wrUpperBoundKey{implantTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW};
     FebexSubsystemTime febexLowerBoundKey{implantTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW, implantTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
-    FebexSubsystemTime febexUpperBoundKey{implantTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW, implantTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
+    FebexSubsystemTime febexUpperBoundKey{implantTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW, implantTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW};
 
     // Fill the Implant time spectrum
     threadLocalHistosVector[0]->Fill(implantTimeStruct.time_wr);
@@ -154,8 +154,10 @@ void processDecayRange(
     // Define Lower & upper bound keys for this implant wr time
     WrSubsystemTime lowerBoundKey{decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
     WrSubsystemTime upperBoundKey{decayTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW};
-    FebexSubsystemTime febexLowerBoundKey{decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW, decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
-    FebexSubsystemTime febexUpperBoundKey{decayTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW, decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
+    // FebexSubsystemTime febexLowerBoundKey{decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW, decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
+    // FebexSubsystemTime febexUpperBoundKey{decayTimeStruct.time_wr + constants::TIME_COINCIDENCE_WINDOW, decayTimeStruct.time_wr - constants::TIME_COINCIDENCE_WINDOW};
+    FebexSubsystemTime febexLowerBoundKey{decayTimeStruct.time_wr - 20000 , decayTimeStruct.time_wr - 20000};
+    FebexSubsystemTime febexUpperBoundKey{decayTimeStruct.time_wr -5000, decayTimeStruct.time_wr -5000};
 
     // Fill the Implant time spectrum
     threadLocalHistosVector[0]->Fill(decayTimeStruct.time_wr);
