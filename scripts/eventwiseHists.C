@@ -420,6 +420,10 @@ void eventwiseHists(const char* input, const char* output) {
   TH2F* h2_frs_z_aoq_corr = new TH2F("frs_z_aoq_corr", "FRS Z vs AoQ", 1000, 1.8,2.5, 1000, 30, 50);
   TH2F* h2_frs_aoq_sx4 = new TH2F("frs_aoq_sx4", "FRS AoQ vs X4", 1000, -150, 150, 1000, 1.8, 2.5);
 
+  TH2F* h2_frs_z_aoq_left_wafer = new TH2F("frs_z_aoq_left_wafer", "FRS Z vs AoQ (Implanting in left DSSSD)", 1000, 1.8,2.5, 1000, 30, 50);
+  TH2F* h2_frs_z_aoq_center_wafer = new TH2F("frs_z_aoq_center_wafer", "FRS Z vs AoQ (Implanting in center DSSSD)", 1000, 1.8,2.5, 1000, 30, 50);
+  TH2F* h2_frs_z_aoq_right_wafer = new TH2F("frs_z_aoq_right_wafer", "FRS Z vs AoQ (Implanting in right DSSSD)", 1000, 1.8,2.5, 1000, 30, 50);
+
   // Decay Hits multiplicity
   TH1F* h1_aida_decay_multiplicity_allspill = new TH1F("aida_decay_multiplicity_allspill", "AIDA decay sub-event multiplicity per event (Allspill)", 50, 0, 50);
   TH1F* h1_aida_decay_multiplicity_onspill = new TH1F("aida_decay_multiplicity_onspill", "AIDA decay sub-event multiplicity per event (Onspill)", 50, 0, 50);
@@ -537,10 +541,16 @@ void eventwiseHists(const char* input, const char* output) {
         //************* DEBUG **************
 
         // Fill histograms
-        h2_frs_z_z2->Fill(z41, z42);
+        h2_frs_z_z2->Fill(z42, z41);
         h2_frs_z_aoq->Fill(aoq, z42);
         h2_frs_z_aoq_corr->Fill(aoq_corr, z42);
         h2_frs_aoq_sx4->Fill(s4x, aoq_corr);
+
+        for ( int j = 0; j < aidaimphits; ++j){
+          if (implant_x[j] < 128) h2_frs_z_aoq_left_wafer->Fill(aoq_corr, z42);
+          if (implant_x[j] >= 128 && implant_x[j] < 256) h2_frs_z_aoq_center_wafer->Fill(aoq_corr, z42);
+          if (implant_x[j] >= 256 ) h2_frs_z_aoq_right_wafer->Fill(aoq_corr, z42);
+        }
 
       }
 
@@ -774,9 +784,10 @@ void eventwiseHists(const char* input, const char* output) {
     
           if (aidadecay_filledtree.count(i) == 0) {
 
-            decay_multiplicity++;
-
             if ( aidadecayhits==1 && TMath::Abs(decay_time_x[i]-decay_time_y[i])<1e3 && TMath::Abs(decay_energy_x[i]-decay_energy_y[i])<168 && decay_energy[i]>150 && decay_energy[i]<1000 ){
+
+              decay_multiplicity++;
+
 
               h1_aida_decay_cluster_size_x->Fill(decay_cluster_size_x[i]);
               h1_aida_decay_cluster_size_y->Fill(decay_cluster_size_y[i]);
@@ -935,6 +946,9 @@ void eventwiseHists(const char* input, const char* output) {
   h2_frs_z_aoq_corr->Write();
   h2_frs_z_z2->Write();
   h2_frs_aoq_sx4->Write();
+  h2_frs_z_aoq_left_wafer->Write();
+  h2_frs_z_aoq_center_wafer->Write();
+  h2_frs_z_aoq_right_wafer->Write();
   gFile->cd();
 
   // Write LEC dataitem All histograms

@@ -472,10 +472,14 @@ void makeAnatrees(const char* input, const char* output) {
       gatedimplant_filledtree_map.emplace(implant_gate_name, std::set<int>());
     }
     
+    // Expetrimental??
+    if (FrsItem.GetSize() > 0){
+      std::cout << "[DEBUG] There are " << FrsItem.GetSize() << " FrsHitItems in an MBS event" << std::endl;
+    }
 
     // std::cout << "[DEBUG] PreCheck" << std::endl;
     // Implants in coincidence with FRS
-    if (aidaimphits > 0 && FrsMultiItem.GetSize()>0 && FrsItem.GetSize()>0) {
+    if (aidaimphits > 0 ) {
       // std::cout << "[DEBUG] PostCheck" << std::endl;
 
       // Apply Lookahead to check frs entrie sof other frs events
@@ -588,7 +592,8 @@ void makeAnatrees(const char* input, const char* output) {
     std::set<int> aidadecay_filledtree{};
 
     // Loop over decay subevents
-    if(aidadecayhits == 1 && aidaimphits == 0){
+    // if(aidadecayhits == 1 && aidaimphits == 0){
+    if(true){
 
       for (int i = 0; i < aidadecayhits; i++) {
 

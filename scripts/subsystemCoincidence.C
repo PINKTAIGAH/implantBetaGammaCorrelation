@@ -48,7 +48,7 @@ namespace experimentInfo{
 
   const uint64_t WR_EXPERIMENT_START = 1740183013717197830; // White rabbit start time of files 
   const uint64_t WR_EXPERIMENT_END = 1740225294308847830; // White rabbit end time of files,
-  const int64_t SLICES_EVERY = 1; // Size of white rabbit histogram bins 
+  const double SLICES_EVERY = 0.001; // Size of white rabbit histogram bins 
   const int64_t DURATION_IN_SECONDS = (WR_EXPERIMENT_END - WR_EXPERIMENT_START)/1e9; // Duration of experiment
   const int64_t NUMBER_OF_SLICES = DURATION_IN_SECONDS/SLICES_EVERY;  // Number of white rabbit histogram bins
 
